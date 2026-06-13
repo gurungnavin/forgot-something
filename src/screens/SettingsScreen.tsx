@@ -280,7 +280,7 @@ export default function SettingsScreen() {
                   <Text style={{ color: '#ef4444', fontSize: 11, marginTop: 4, marginLeft: 4 }}>
                     Enter a valid hex e.g. #ff5733
                   </Text>
-                )}0
+                )}
               </View>
             </View>
 

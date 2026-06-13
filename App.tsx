@@ -6,62 +6,43 @@ import { View, TouchableOpacity } from "react-native";
 import TableScreen from "./src/screens/TableScreen";
 import Toast from "react-native-toast-message";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Ionicons } from "@expo/vector-icons";
 import * as Notifications from "expo-notifications";
 import { ThemeProvider, useTheme } from "./src/context/ThemeContext";
-import HomeScreen, { HomeScreenRef } from "./src/screens/HomeScreen";
+import HomeScreen from "./src/screens/HomeScreen";
 import ListDetailScreen from "./src/screens/ListDetailScreen";
 import SuccessScreen from "./src/screens/SuccessScreen";
 import MissingItemsScreen from "./src/screens/MissingItemsScreen";
-import OnboardingScreen, {
-  ONBOARDING_KEY,
-} from "./src/screens/OnboardingScreen";
+import TableDetailScreen from "./src/screens/TableDetailScreen";
+import OnboardingScreen, { ONBOARDING_KEY } from "./src/screens/OnboardingScreen";
 import TransitionScreen from "./src/screens/TransitionScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import { setupNotifications } from "./src/utils/notifications";
 import { RootStackParamList } from "./src/types";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
-const Tab = createBottomTabNavigator();
 
 // ── Bottom Tabs ────────────────────────────────────────────────────────────────
 function TabNavigator() {
   const { isDark, accent } = useTheme();
   const [activeTab, setActiveTab] = useState("Home");
-  const homeRef = useRef<HomeScreenRef>(null);
+
   const renderScreen = () => {
     switch (activeTab) {
-      case "Home":
-        return <HomeScreen ref={homeRef} />;
-
-      case "Table":
-        return <TableScreen />;
-      case "Settings":
-        return <SettingsScreen />;
-      default:
-        return <HomeScreen />;
+      case "Home": return <HomeScreen />
+      case "Table": return <TableScreen />
+      case "Settings": return <SettingsScreen />
+      default: return <HomeScreen />
     }
-  };
-
-  const handleTabPress = (tab: string) => {
-    if (tab === "Add") {
-      setActiveTab("Home");
-      setTimeout(() => {
-        homeRef.current?.openCreateModal();
-      }, 100);
-      return;
-    }
-    setActiveTab(tab);
   };
 
   return (
     <View style={{ flex: 1 }}>
       {renderScreen()}
 
-      {/* Custom Pill Tab Bar */}
+      {/* Custom Pill Tab Bar — 3 tabs */}
       <View
         style={{
           position: "absolute",
@@ -83,106 +64,37 @@ function TabNavigator() {
       >
         {/* Home */}
         <TouchableOpacity
-          onPress={() => handleTabPress("Home")}
+          onPress={() => setActiveTab("Home")}
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
           <Ionicons
             name={activeTab === "Home" ? "home" : "home-outline"}
             size={24}
-            color={
-              activeTab === "Home"
-                ? accent.primary
-                : isDark
-                  ? "#6b7280"
-                  : "#9ca3af"
-            }
+            color={activeTab === "Home" ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
           />
-        </TouchableOpacity>
-
-        {/* Add */}
-        <TouchableOpacity
-          onPress={() => handleTabPress("Add")}
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <View
-            style={{
-              width: 52,
-              height: 34,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <View
-              style={{
-                position: "absolute",
-                left: 0,
-                width: 36,
-                height: 34,
-                borderRadius: 8,
-                backgroundColor: accent.primary,
-                opacity: 0.4,
-              }}
-            />
-            <View
-              style={{
-                position: "absolute",
-                right: 0,
-                width: 36,
-                height: 34,
-                borderRadius: 8,
-                backgroundColor: accent.primary,
-                opacity: 0.4,
-              }}
-            />
-            <View
-              style={{
-                width: 36,
-                height: 34,
-                borderRadius: 8,
-                backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1,
-              }}
-            >
-              <Ionicons name="add" size={22} color={accent.primary} />
-            </View>
-          </View>
         </TouchableOpacity>
 
         {/* Table */}
         <TouchableOpacity
-          onPress={() => handleTabPress("Table")}
+          onPress={() => setActiveTab("Table")}
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
           <Ionicons
             name={activeTab === "Table" ? "grid" : "grid-outline"}
             size={24}
-            color={
-              activeTab === "Table"
-                ? accent.primary
-                : isDark
-                  ? "#6b7280"
-                  : "#9ca3af"
-            }
+            color={activeTab === "Table" ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
           />
         </TouchableOpacity>
 
         {/* Settings */}
         <TouchableOpacity
-          onPress={() => handleTabPress("Settings")}
+          onPress={() => setActiveTab("Settings")}
           style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
         >
           <Ionicons
             name={activeTab === "Settings" ? "settings" : "settings-outline"}
             size={24}
-            color={
-              activeTab === "Settings"
-                ? accent.primary
-                : isDark
-                  ? "#6b7280"
-                  : "#9ca3af"
-            }
+            color={activeTab === "Settings" ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
           />
         </TouchableOpacity>
       </View>
@@ -192,11 +104,8 @@ function TabNavigator() {
 
 // ── Root Stack ─────────────────────────────────────────────────────────────────
 function RootNavigator() {
-  const [initialRoute, setInitialRoute] = useState<
-    keyof RootStackParamList | null
-  >(null);
-  const navigationRef =
-    useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
     const checkOnboarding = async () => {
@@ -206,13 +115,10 @@ function RootNavigator() {
     checkOnboarding();
   }, []);
 
-  // ── Notification tap handler ───────────────────────────────────────────────
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const listId = response.notification.request.content.data?.listId as
-          | string
-          | undefined;
+        const listId = response.notification.request.content.data?.listId as string | undefined;
         if (listId && navigationRef.current) {
           navigationRef.current.navigate("Tabs" as any);
           setTimeout(() => {
@@ -232,36 +138,13 @@ function RootNavigator() {
         initialRouteName={initialRoute}
         screenOptions={{ animation: "fade" }}
       >
-        <Stack.Screen
-          name="Onboarding"
-          component={OnboardingScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Transition"
-          component={TransitionScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Tabs"
-          component={TabNavigator}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="ListDetail"
-          component={ListDetailScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Success"
-          component={SuccessScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="MissingItems"
-          component={MissingItemsScreen}
-          options={{ headerShown: false }}
-        />
+        <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Transition" component={TransitionScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
+        <Stack.Screen name="ListDetail" component={ListDetailScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="TableDetail" component={TableDetailScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Success" component={SuccessScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="MissingItems" component={MissingItemsScreen} options={{ headerShown: false }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
