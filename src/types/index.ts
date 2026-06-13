@@ -26,6 +26,7 @@ export type RootStackParamList = {
   Onboarding: undefined
   Transition: undefined
   Tabs: undefined
+  Home: { openModal?: boolean } | undefined
   ListDetail: { listId: string }
   Success: { listId: string }
   MissingItems: { missing: string[]; listId: string }

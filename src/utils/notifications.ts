@@ -55,14 +55,19 @@ export async function scheduleReminder(
   body: string,
   date: Date,
   taskId: string,
-  intervalMinutes: number = 1,
+  intervalMinutes: number = 2,
   repeatCount: number = 6
 ): Promise<string[]> {
   const ids: string[] = [];
+  
+  // ✅ zero out seconds and milliseconds
+  const baseDate = new Date(date)
+  baseDate.setSeconds(0, 0)
+
   for (let i = 0; i < repeatCount; i++) {
-    const triggerDate = new Date(date.getTime() + i * intervalMinutes * 60 * 1000);
+    const triggerDate = new Date(baseDate.getTime() + i * intervalMinutes * 60 * 1000);
     const id = await Notifications.scheduleNotificationAsync({
-      content: { title, body, sound: true },
+      content: { title, body, sound: true, data: {listId: taskId} },
       trigger: { type: Notifications.SchedulableTriggerInputTypes.DATE, date: triggerDate },
     });
     ids.push(id);
