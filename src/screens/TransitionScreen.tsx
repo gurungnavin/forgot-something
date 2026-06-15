@@ -1,97 +1,119 @@
 import { useEffect, useRef } from 'react'
-import { View, Text, Animated, Image } from 'react-native'
+import { View, Animated } from 'react-native'
 import { useTheme } from '../context/ThemeContext'
 import { useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-
-type RootStackParamList = {
-  Onboarding: undefined
-  Transition: undefined
-  Tabs: undefined
-  ListDetail: { listId: string }
-  Success: { listId: string }
-  MissingItems: { missing: string[]; listId: string }
-}
+import { RootStackParamList } from '../types'
 
 export default function TransitionScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()
-  const { isDark } = useTheme()
+  const { isDark, accent } = useTheme()
 
-  const scaleAnim = useRef(new Animated.Value(0)).current
-  const fadeAnim = useRef(new Animated.Value(0)).current
-  const textFadeAnim = useRef(new Animated.Value(0)).current
-  const bgFadeAnim = useRef(new Animated.Value(1)).current
+  // Text animation
+  const textFade = useRef(new Animated.Value(0)).current
+  const textSlide = useRef(new Animated.Value(30)).current
+
+  // Dot animation
+  const dotScale = useRef(new Animated.Value(0)).current
+  const dotBounce = useRef(new Animated.Value(0)).current
+
+  // Screen fade out
+  const bgFade = useRef(new Animated.Value(1)).current
 
   useEffect(() => {
     Animated.sequence([
-      // 1. Emoji bounces in
-      Animated.spring(scaleAnim, {
+      // 1. "Quikli" slides up and fades in
+      Animated.parallel([
+        Animated.timing(textFade, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.timing(textSlide, {
+          toValue: 0,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+      ]),
+
+      // 2. Small pause
+      Animated.delay(200),
+
+      // 3. Pink dot bounces in
+      Animated.spring(dotScale, {
         toValue: 1,
-        friction: 4,
-        tension: 80,
+        friction: 3,
+        tension: 100,
         useNativeDriver: true,
       }),
-      // 2. Subtitle fades in
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      // 3. Text fades in
-      Animated.timing(textFadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }),
-      // 4. Hold for a moment
-      Animated.delay(700),
-      // 5. Whole screen fades out
-      Animated.timing(bgFadeAnim, {
+
+      // 4. Hold
+      Animated.delay(800),
+
+      // 5. Fade out screen
+      Animated.timing(bgFade, {
         toValue: 0,
-        duration: 600,
+        duration: 500,
         useNativeDriver: true,
       }),
     ]).start(() => {
-        navigation.replace('Tabs') // Navigate to main app after animation
+      navigation.replace('Tabs')
     })
   }, [])
 
   return (
-   <Animated.View
-  style={{
-    opacity: bgFadeAnim,
-    backgroundColor: isDark ? "#111827" : "#fff", // dark: gray-900, light: white
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-  }}
->
-      {/* Emoji */}
-      <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-        <View className={`w-52 h-52 rounded-full items-center justify-center mb-6 shadow-lg ${
-          isDark ? 'bg-gray-800' : 'bg-white'
-        }`}>
-          <Image 
-            source={require("../../assets/forgotSomethingLogo.png")}
-            style={{ width: 180, height: 180 }}
-          />
-        </View>
-      </Animated.View>
+    <Animated.View
+      style={{
+        opacity: bgFade,
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: isDark ? '#111827' : '#ffffff',
+      }}
+    >
+      {/* Quikli. logo */}
+      <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
 
-      {/* App Name */}
-      <Animated.Text
-        style={{ opacity: fadeAnim }}
-        className={`text-3xl font-bold text-center mb-3 ${isDark ? 'text-white' : 'text-gray-700'}`}
-      >
-        Forgot Something?
-      </Animated.Text>
+        {/* "Quikli" text */}
+        <Animated.Text
+          style={{
+            opacity: textFade,
+            transform: [{ translateY: textSlide }],
+            fontSize: 52,
+            fontWeight: '800',
+            letterSpacing: -1,
+            color: isDark ? '#ffffff' : '#111827',
+          }}
+        >
+          Quikli
+        </Animated.Text>
 
-      {/* Tagline */}
+        {/* Pink dot bounces in */}
+        <Animated.Text
+          style={{
+            transform: [{ scale: dotScale }],
+            fontSize: 52,
+            fontWeight: '800',
+            color: accent.primary,
+            marginBottom: 2,
+          }}
+        >
+          .
+        </Animated.Text>
+
+      </View>
+
+      {/* Tagline fades with text */}
       <Animated.Text
-        style={{ opacity: textFadeAnim }}
-        className={`text-base text-center ${isDark ? 'text-gray-400' : 'text-gray-400'}`}
+        style={{
+          opacity: textFade,
+          marginTop: 8,
+          fontSize: 14,
+          color: isDark ? '#6b7280' : '#9ca3af',
+          letterSpacing: 1,
+        }}
       >
-        You're all set! Let's go 🚀
+        your quick checklist
       </Animated.Text>
     </Animated.View>
   )

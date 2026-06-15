@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "forgot-something",
-    "slug": "forgot-something",
+    "name": "Quikli",
+    "slug": "quikli",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/forgotSomethingLogo.png",
@@ -14,11 +14,11 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.anonymous.forgot-something"
+      "bundleIdentifier": "com.anonymous.quikli"
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/forgotSomethingLogo.png",
+        "foregroundImage": "./assets/quikli-red.png",
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,

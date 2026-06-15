@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import Svg, { Circle } from "react-native-svg";
 import { List } from "../types";
 import { useTheme } from "../context/ThemeContext";
 import { CATEGORIES } from "../constants/categories";
@@ -13,74 +12,15 @@ type Props = {
   onMenuPress: () => void;
 };
 
-const PASTEL_LIGHT = ["#fff1f2", "#fdf4ff", "#eff6ff", "#f0fdf4", "#fff7ed"];
+const ACCENT_COLORS = [
+  "#fb7185",
+  "#f97316",
+  "#facc15",
+  "#4ade80",
+  "#60a5fa",
+  "#c084fc",
+];
 
-// ─── Donut Chart ───────────────────────────────────────────────────────────────
-function DonutChart({
-  percentage,
-  color,
-  isDark,
-}: {
-  percentage: number;
-  color: string;
-  isDark: boolean;
-}) {
-  const size = 60;
-  const strokeWidth = 6;
-  const radius = (size - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const filled = (percentage / 100) * circumference;
-  const empty = circumference - filled;
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Svg width={size} height={size}>
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          stroke={isDark ? "#374151" : "#ffffff80"}
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {percentage > 0 && (
-          <Circle
-            cx={size / 2}
-            cy={size / 2}
-            r={radius}
-            stroke={color}
-            strokeWidth={strokeWidth}
-            fill="none"
-            strokeDasharray={`${filled} ${empty}`}
-            strokeLinecap="round"
-            rotation="-90"
-            origin={`${size / 2}, ${size / 2}`}
-          />
-        )}
-      </Svg>
-      <View
-        style={{
-          position: "absolute",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
-        <Text style={{ color, fontSize: 10, fontWeight: "bold" }}>
-          {percentage}%
-        </Text>
-      </View>
-    </View>
-  );
-}
-
-// ─── Animated Bell ─────────────────────────────────────────────────────────────
 function AnimatedBell({ color }: { color: string }) {
   const rotate = useRef(new Animated.Value(0)).current;
 
@@ -114,9 +54,8 @@ function AnimatedBell({ color }: { color: string }) {
         }),
       ]).start();
     };
-
-    ring(); // ring on mount
-    const interval = setInterval(ring, 4000); // ring every 4s
+    ring();
+    const interval = setInterval(ring, 4000);
     return () => clearInterval(interval);
   }, []);
 
@@ -127,18 +66,13 @@ function AnimatedBell({ color }: { color: string }) {
 
   return (
     <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-      <Ionicons name="notifications" size={14} color={color} />
+      <Ionicons name="notifications" size={12} color={color} />
     </Animated.View>
   );
 }
 
-// ─── ListCard ──────────────────────────────────────────────────────────────────
 export default function ListCard({ list, index, onPress, onMenuPress }: Props) {
   const { isDark, accent } = useTheme();
-
-  const cardBg = isDark ? undefined : PASTEL_LIGHT[index % PASTEL_LIGHT.length];
-  const darkCardClass = isDark ? "bg-gray-800" : "";
-  const ringColor = accent.primary;
 
   const totalItems = list.items.length;
   const checkedItems = list.items.filter((i) => i.checked).length;
@@ -146,6 +80,7 @@ export default function ListCard({ list, index, onPress, onMenuPress }: Props) {
     (totalItems > 0 ? checkedItems / totalItems : 0) * 100,
   );
   const isComplete = totalItems > 0 && checkedItems === totalItems;
+  const cardAccent = ACCENT_COLORS[index % ACCENT_COLORS.length];
 
   const category = CATEGORIES.find((c) => c.key === list.category);
   const categoryIcon = (category?.icon ?? "list-outline") as any;
@@ -153,96 +88,157 @@ export default function ListCard({ list, index, onPress, onMenuPress }: Props) {
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.8}
-      className={`rounded-3xl px-5 py-4 mb-4 flex-row items-center ${darkCardClass}`}
-      style={[
-        !isDark
-          ? {
-              backgroundColor: cardBg,
-              borderWidth: 1.5,
-              borderColor: accent.primary,
-            }
-          : { borderWidth: 1.5, borderColor: "rgba(255,255,255,0.1)" },
-        { marginTop: list.reminder && !isComplete ? 7 : 0 }, // ← add this
-      ]}
+      activeOpacity={0.7}
+      style={{
+        backgroundColor: isDark ? "#1f2937" : "#ffffff",
+        borderRadius: 16,
+        marginBottom: 10,
+        flexDirection: "row",
+        alignItems: "stretch",
+        overflow: "hidden",
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: isDark ? 0.2 : 0.06,
+        shadowRadius: 8,
+        elevation: 2,
+        marginTop: list.reminder && !isComplete ? 10 : 0,
+      }}
     >
-      {/* Left — Icon + Name + Subtitle */}
-      <View className="flex-1 mr-4">
-        <View className="flex-row items-center mb-1">
+      {/* Left accent bar */}
+      <View
+        style={{
+          width: 4,
+          backgroundColor: isComplete ? "#4ade80" : cardAccent,
+        }}
+      />
+
+      {/* Content */}
+      <View style={{ flex: 1, paddingHorizontal: 14, paddingVertical: 12 }}>
+        {/* Top row — title + percentage + chevron */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 6,
+          }}
+        >
+          {/* Category icon */}
           <View
-            className={`w-10 h-10 rounded-2xl items-center justify-center mr-3 ${
-              isDark ? "bg-black/20" : "bg-white/80"
-            }`}
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 8,
+              backgroundColor: cardAccent + "22",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 10,
+            }}
           >
-            <Ionicons
-              name={categoryIcon}
-              size={20}
-              color={isDark ? "#ffffffaa" : accent.primary}
-            />
+            <Ionicons name={categoryIcon} size={15} color={cardAccent} />
           </View>
 
+          {/* Title */}
           <Text
             numberOfLines={1}
-            className={`text-xl font-bold flex-1 ${isDark ? "text-white" : ""}`}
-            style={!isDark ? { color: accent.text } : {}}
+            style={{
+              flex: 1,
+              fontSize: 15,
+              fontWeight: "700",
+              color: isDark ? "#f9fafb" : "#1f2937",
+            }}
           >
             {list.name}
           </Text>
+
+          {/* Percentage */}
+          <Text
+            style={{
+              fontSize: 14,
+              fontWeight: "700",
+              color: isComplete ? "#4ade80" : cardAccent,
+              marginRight: 6,
+            }}
+          >
+            {percentage}%
+          </Text>
+
+          {/* Menu */}
+          <TouchableOpacity
+            onPress={onMenuPress}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons
+              name="ellipsis-vertical"
+              size={18}
+              color={isDark ? "#4b5563" : "#9ca3af"}
+            />
+          </TouchableOpacity>
         </View>
 
-        <View className="flex-row items-center ml-13 gap-2">
+        {/* Subtitle row */}
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            marginBottom: 8,
+            marginLeft: 42,
+          }}
+        >
           <Text
-            className={`text-md font-semibold ${isDark ? "text-white/30" : "text-gray-300"}`}
+            style={{
+              fontSize: 12,
+              color: isDark ? "#6b7280" : "#9ca3af",
+            }}
           >
-            #{index + 1}
-          </Text>
-          <Text
-            className={`text-md ${isDark ? "text-white/20" : "text-gray-200"}`}
-          >
-            ·
-          </Text>
-          <Text
-            className={`text-md ${isDark ? "text-white/20" : "text-gray-200"}`}
-          >
-            ·
-          </Text>
-          <Text
-            className={`text-md ${isDark ? "text-white/50" : "text-gray-400"}`}
-          >
+            #{index + 1} ·{" "}
             {totalItems === 0
               ? "No items yet"
               : isComplete
-                ? "🎉 All done!"
+                ? "All done!"
                 : `${checkedItems} of ${totalItems} checked`}
           </Text>
+          {isComplete && (
+            <Ionicons
+              name="checkmark-circle"
+              size={13}
+              color="#4ade80"
+              style={{ marginLeft: 4 }}
+            />
+          )}
+        </View>
+
+        {/* Progress bar */}
+        <View style={{ marginLeft: 42 }}>
+          <View
+            style={{
+              height: 3,
+              borderRadius: 2,
+              backgroundColor: isDark ? "#374151" : "#f3f4f6",
+              overflow: "hidden",
+            }}
+          >
+            <View
+              style={{
+                height: 3,
+                borderRadius: 2,
+                width: `${percentage}%`,
+                backgroundColor: isComplete ? "#4ade80" : cardAccent,
+              }}
+            />
+          </View>
         </View>
       </View>
 
-      {/* Right — Donut + ⋮ */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-        <DonutChart percentage={percentage} color={ringColor} isDark={isDark} />
-        <TouchableOpacity
-          onPress={onMenuPress}
-          hitSlop={{ top: 8, bottom: 8, left: 12, right: 12 }}
-        >
-          <Ionicons
-            name="ellipsis-vertical"
-            size={20}
-            color={isDark ? "rgba(255,255,255,0.4)" : "#9ca3af"}
-          />
-        </TouchableOpacity>
-      </View>
-
-      {/* 🔔 Animated Bell Badge — top right corner */}
+      {/* Reminder Bell Badge */}
       {list.reminder && !isComplete && (
         <View
           style={{
             position: "absolute",
-            top: -8,
-            right: 12,
-            backgroundColor: accent.primary,
+            top: -7,
+            right: 10,
+            backgroundColor: cardAccent,
             borderRadius: 10,
-            paddingHorizontal: 7,
+            paddingHorizontal: 6,
             paddingVertical: 3,
           }}
         >

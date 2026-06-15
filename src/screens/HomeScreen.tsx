@@ -11,6 +11,7 @@ import {
   ScrollView,
 } from "react-native";
 import Toast from "react-native-toast-message";
+import LottieView from "lottie-react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
@@ -98,7 +99,9 @@ const CategoryPicker = ({
                 borderRadius: 20,
                 backgroundColor: isSelected
                   ? accent.primary
-                  : isDark ? "#374151" : "#f3f4f6",
+                  : isDark
+                    ? "#374151"
+                    : "#f3f4f6",
                 borderWidth: isSelected ? 0 : 1,
                 borderColor: isDark ? "#4b5563" : "#e5e7eb",
               }}
@@ -112,7 +115,11 @@ const CategoryPicker = ({
                 style={{
                   fontSize: 13,
                   fontWeight: "500",
-                  color: isSelected ? "#ffffff" : isDark ? "#d1d5db" : "#4b5563",
+                  color: isSelected
+                    ? "#ffffff"
+                    : isDark
+                      ? "#d1d5db"
+                      : "#4b5563",
                 }}
               >
                 {cat.label}
@@ -127,14 +134,17 @@ const CategoryPicker = ({
 
 // ── HomeScreen ─────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation =
+    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark, accent } = useTheme();
   const { lists, refreshLists, editList, removeList } = useLists();
 
   // Create modal
   const [modalVisible, setModalVisible] = useState(false);
   const [newListName, setNewListName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(
+    null,
+  );
 
   // Edit modal
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -147,7 +157,9 @@ export default function HomeScreen() {
 
   // Reminder
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
-  const [reminderCountdown, setReminderCountdown] = useState<string | null>(null);
+  const [reminderCountdown, setReminderCountdown] = useState<string | null>(
+    null,
+  );
 
   const createScrollRef = useRef<ScrollView>(null);
   const createItemPositions = useRef<{ [key: string]: number }>({});
@@ -172,7 +184,9 @@ export default function HomeScreen() {
     } else {
       setReminderCountdown(null);
     }
-    return () => { if (interval) clearInterval(interval); };
+    return () => {
+      if (interval) clearInterval(interval);
+    };
   }, [menuVisible, menuList?.reminder?.time]);
 
   // ── Create ─────────────────────────────────────────────────────────────────
@@ -297,12 +311,12 @@ export default function HomeScreen() {
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       {/* Header */}
-      <View className="items-center mb-6">
+      <View className="items-center mb-6 mt-4">
         <Text
-          className="text-3xl font-bold text-center mt-6 md:mt-2"
+          className="text-4xl font-bold text-center"
           style={{ color: isDark ? "#fda4af" : accent.text }}
         >
-          Forgot Something?
+          Quikli.
         </Text>
         <Text className="text-sm mt-1 text-center text-gray-400">
           {lists.length}/{MAX_LISTS} lists used
@@ -310,37 +324,58 @@ export default function HomeScreen() {
       </View>
 
       {/* Empty State */}
-      {lists.length === 0 && (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-6xl mb-4">🛒</Text>
-          <Text className={`text-lg font-semibold ${isDark ? "text-gray-300" : "text-gray-500"}`}>
-            No lists yet!
+      {lists.length === 0 ? (
+        <View
+          style={{
+            flex: 1,
+            alignItems: "center",
+            justifyContent: "center",
+            paddingBottom: 80,
+          }}
+        >
+          <LottieView
+            source={require("../../assets/lottie/bunny.json")}
+            autoPlay
+            loop
+            style={{ width: 320, height: 320 }}
+          />
+          <Text
+            className="text-2xl font-bold text-center mt-4"
+            style={{ color: isDark ? "#fda4af" : accent.text }}
+          >
+            Nothing here yet!
           </Text>
-          <Text className={`text-sm mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
-            Tap + to create your first list
+          <Text
+            className="text-sm text-center mt-2"
+            style={{ color: isDark ? "#6b7280" : "#9ca3af" }}
+          >
+            Tap + to create your first checklist
           </Text>
         </View>
+      ) : (
+        <FlatList
+          data={lists}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => (
+            <View
+              style={{ marginTop: item.reminder && !isComplete(item) ? 12 : 0 }}
+            >
+              <ListCard
+                list={item}
+                index={index}
+                onPress={() =>
+                  navigation.navigate("ListDetail", { listId: item.id })
+                }
+                onMenuPress={() => handleOpenMenu(item)}
+              />
+            </View>
+          )}
+        />
       )}
 
-      {/* List */}
-      <FlatList
-        data={lists}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <View style={{ marginTop: item.reminder && !isComplete(item) ? 12 : 0 }}>
-            <ListCard
-              list={item}
-              index={index}
-              onPress={() => navigation.navigate("ListDetail", { listId: item.id })}
-              onMenuPress={() => handleOpenMenu(item)}
-            />
-          </View>
-        )}
-      />
-
-      {/* FAB ← back */}
+      {/* FAB */}
       <TouchableOpacity
         onPress={handleCreateList}
         className="absolute bottom-32 right-6 w-16 h-16 rounded-full items-center justify-center shadow-lg"
@@ -357,9 +392,15 @@ export default function HomeScreen() {
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View className={`mx-4 mb-10 rounded-3xl overflow-hidden ${isDark ? "bg-gray-800" : "bg-white"}`}>
-            <View className={`px-5 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}>
-              <Text className={`text-sm font-medium text-center ${isDark ? "text-gray-400" : "text-gray-400"}`}>
+          <View
+            className={`mx-4 mb-10 rounded-3xl overflow-hidden ${isDark ? "bg-gray-800" : "bg-white"}`}
+          >
+            <View
+              className={`px-5 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+            >
+              <Text
+                className={`text-sm font-medium text-center ${isDark ? "text-gray-400" : "text-gray-400"}`}
+              >
                 {menuList?.name}
               </Text>
             </View>
@@ -369,20 +410,33 @@ export default function HomeScreen() {
               className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
             >
               <Text className="text-xl mr-4">✏️</Text>
-              <Text className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}>
+              <Text
+                className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}
+              >
                 Edit List
               </Text>
             </TouchableOpacity>
 
             {menuList && !isComplete(menuList) && (
               <TouchableOpacity
-                onPress={() => { setMenuVisible(false); setReminderModalVisible(true); }}
+                onPress={() => {
+                  setMenuVisible(false);
+                  setReminderModalVisible(true);
+                }}
                 className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
               >
                 <Text className="text-xl mr-4">🔔</Text>
                 <View style={{ flex: 1 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <Text
+                      className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}
+                    >
                       Set Reminder
                     </Text>
                     {menuList?.reminder?.time && (
@@ -406,7 +460,9 @@ export default function HomeScreen() {
                 className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
               >
                 <Text className="text-xl mr-4">🔕</Text>
-                <Text className="text-base font-medium text-rose-500">Cancel Reminder</Text>
+                <Text className="text-base font-medium text-rose-500">
+                  Cancel Reminder
+                </Text>
               </TouchableOpacity>
             )}
 
@@ -415,7 +471,9 @@ export default function HomeScreen() {
               className="px-5 py-4 flex-row items-center"
             >
               <Text className="text-xl mr-4">🗑️</Text>
-              <Text className="text-base font-medium text-rose-500">Delete List</Text>
+              <Text className="text-base font-medium text-rose-500">
+                Delete List
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -423,7 +481,9 @@ export default function HomeScreen() {
             onPress={() => setMenuVisible(false)}
             className={`mx-4 mb-6 py-4 rounded-2xl items-center ${isDark ? "bg-gray-700" : "bg-white"}`}
           >
-            <Text className={`font-semibold ${isDark ? "text-white" : "text-gray-700"}`}>
+            <Text
+              className={`font-semibold ${isDark ? "text-white" : "text-gray-700"}`}
+            >
               Cancel
             </Text>
           </TouchableOpacity>
@@ -439,8 +499,12 @@ export default function HomeScreen() {
 
       {/* Create List Modal */}
       <KeyboardModal visible={modalVisible} onClose={handleCloseCreateModal}>
-        <View className={`w-full rounded-3xl px-6 py-6 ${isDark ? "bg-gray-800" : "bg-white"}`}>
-          <Text className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}>
+        <View
+          className={`w-full rounded-3xl px-6 py-6 ${isDark ? "bg-gray-800" : "bg-white"}`}
+        >
+          <Text
+            className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}
+          >
             New List 📝
           </Text>
           <CategoryPicker
@@ -488,8 +552,12 @@ export default function HomeScreen() {
 
       {/* Edit List Modal */}
       <KeyboardModal visible={editModalVisible} onClose={handleCloseEditModal}>
-        <View className={`w-full rounded-3xl px-6 py-6 ${isDark ? "bg-gray-800" : "bg-white"}`}>
-          <Text className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}>
+        <View
+          className={`w-full rounded-3xl px-6 py-6 ${isDark ? "bg-gray-800" : "bg-white"}`}
+        >
+          <Text
+            className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}
+          >
             Edit List ✏️
           </Text>
           <CategoryPicker
