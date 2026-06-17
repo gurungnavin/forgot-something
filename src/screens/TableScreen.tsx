@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -9,16 +9,17 @@ import {
   TextInput,
   StatusBar,
   ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import uuid from "react-native-uuid";
 import LottieView from "lottie-react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTheme } from "../context/ThemeContext";
 import { useTables } from "../hooks/useTables";
-import { CustomTable, Column, ColumnType } from "../types";
-import { RootStackParamList } from "../types";
+import { CustomTable, Column, ColumnType, RootStackParamList } from "../types";
 import ReminderModal from "../components/ReminderModal";
 import TableEditModal from "../components/TableEditModal";
 import {
@@ -28,19 +29,19 @@ import {
 } from "../utils/notifications";
 import { loadTables } from "../storage/storage";
 
-const EMOJI_OPTIONS = [
-  "⚽",
-  "🎉",
-  "✈️",
-  "🍕",
-  "🏀",
-  "🎮",
-  "💰",
-  "📋",
-  "🏋️",
-  "🎵",
-  "🎯",
-  "👥",
+const ICON_OPTIONS: { icon: string; color: string }[] = [
+  { icon: "football-outline", color: "#22c55e" },
+  { icon: "happy-outline", color: "#f97316" },
+  { icon: "airplane-outline", color: "#3b82f6" },
+  { icon: "pizza-outline", color: "#ef4444" },
+  { icon: "basketball-outline", color: "#f97316" },
+  { icon: "game-controller-outline", color: "#8b5cf6" },
+  { icon: "cash-outline", color: "#22c55e" },
+  { icon: "clipboard-outline", color: "#6b7280" },
+  { icon: "barbell-outline", color: "#f43f5e" },
+  { icon: "musical-notes-outline", color: "#a855f7" },
+  { icon: "trophy-outline", color: "#eab308" },
+  { icon: "people-outline", color: "#0ea5e9" },
 ];
 
 const COLUMN_TYPES: { type: ColumnType; label: string; icon: string }[] = [
@@ -50,7 +51,21 @@ const COLUMN_TYPES: { type: ColumnType; label: string; icon: string }[] = [
   { type: "date", label: "Date", icon: "calendar-outline" },
 ];
 
-const PASTEL_LIGHT = ["#fff1f2", "#fdf4ff", "#eff6ff", "#f0fdf4", "#fff7ed"];
+const COLUMN_TYPE_ICONS: Record<ColumnType, string> = {
+  text: "text-outline",
+  number: "calculator-outline",
+  checkbox: "checkbox-outline",
+  date: "calendar-outline",
+};
+
+const CARD_COLORS = [
+  { bg: "#fff1f2", icon: "#fb7185", dark_bg: "#2d1417", dark_icon: "#fb7185" },
+  { bg: "#fff7ed", icon: "#f97316", dark_bg: "#2d1b0e", dark_icon: "#f97316" },
+  { bg: "#fefce8", icon: "#eab308", dark_bg: "#2d2608", dark_icon: "#eab308" },
+  { bg: "#f0fdf4", icon: "#22c55e", dark_bg: "#0d2818", dark_icon: "#22c55e" },
+  { bg: "#eff6ff", icon: "#3b82f6", dark_bg: "#0d1f3c", dark_icon: "#60a5fa" },
+  { bg: "#faf5ff", icon: "#a855f7", dark_bg: "#1e0d33", dark_icon: "#c084fc" },
+];
 
 export default function TableScreen() {
   const { isDark, accent } = useTheme();
@@ -59,32 +74,28 @@ export default function TableScreen() {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
-  // Create modal
   const [createVisible, setCreateVisible] = useState(false);
   const [tableName, setTableName] = useState("");
-  const [tableEmoji, setTableEmoji] = useState("📋");
+  const [tableIcon, setTableIcon] = useState("clipboard-outline");
   const [tableDescription, setTableDescription] = useState("");
-  const [tableDate, setTableDate] = useState("");
   const [columns, setColumns] = useState<Column[]>([]);
   const [newColumnLabel, setNewColumnLabel] = useState("");
   const [newColumnType, setNewColumnType] = useState<ColumnType>("text");
 
-  // Edit modal — now uses TableEditModal component
   const [editVisible, setEditVisible] = useState(false);
   const [editingTable, setEditingTable] = useState<CustomTable | null>(null);
 
-  // Menu
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuTable, setMenuTable] = useState<CustomTable | null>(null);
 
-  // Reminder
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
 
-  useEffect(() => {
-    refreshTables();
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      refreshTables();
+    }, []),
+  );
 
-  // ── Edit ───────────────────────────────────────────────────────────────────
   const handleOpenEdit = (table: CustomTable) => {
     setEditingTable(table);
     setMenuVisible(false);
@@ -92,24 +103,17 @@ export default function TableScreen() {
   };
 
   const handleSaveEdit = async (updated: CustomTable) => {
-    // Read fresh from storage to preserve latest rows
     const allTables = await loadTables();
     const freshTable = allTables.find((t) => t.id === updated.id);
-    const updatedWithFreshRows = {
-      ...updated,
-      rows: freshTable?.rows ?? updated.rows,
-    };
-    await editTable(updatedWithFreshRows);
+    await editTable({ ...updated, rows: freshTable?.rows ?? updated.rows });
     setEditVisible(false);
     setEditingTable(null);
   };
 
-  // ── Create ─────────────────────────────────────────────────────────────────
   const handleOpenCreate = () => {
     setTableName("");
-    setTableEmoji("📋");
+    setTableIcon("clipboard-outline");
     setTableDescription("");
-    setTableDate("");
     setColumns([]);
     setNewColumnLabel("");
     setNewColumnType("text");
@@ -119,19 +123,16 @@ export default function TableScreen() {
   const handleAddColumn = () => {
     const label = newColumnLabel.trim();
     if (!label) return;
-    const newColumn: Column = {
-      id: uuid.v4() as string,
-      label,
-      type: newColumnType,
-    };
-    setColumns([...columns, newColumn]);
+    setColumns((prev) => [
+      ...prev,
+      { id: uuid.v4() as string, label, type: newColumnType },
+    ]);
     setNewColumnLabel("");
     setNewColumnType("text");
   };
 
-  const handleRemoveColumn = (id: string) => {
-    setColumns(columns.filter((c) => c.id !== id));
-  };
+  const handleRemoveColumn = (id: string) =>
+    setColumns((prev) => prev.filter((c) => c.id !== id));
 
   const handleCreateTable = async () => {
     const name = tableName.trim();
@@ -143,21 +144,18 @@ export default function TableScreen() {
       );
       return;
     }
-    const newTable: CustomTable = {
+    await createTable({
       id: uuid.v4() as string,
       name,
-      emoji: tableEmoji,
+      emoji: tableIcon,
       description: tableDescription.trim() || undefined,
-      date: tableDate.trim() || undefined,
       createdAt: new Date().toISOString(),
       columns,
       rows: [],
-    };
-    await createTable(newTable);
+    });
     setCreateVisible(false);
   };
 
-  // ── Menu ───────────────────────────────────────────────────────────────────
   const handleOpenMenu = (table: CustomTable) => {
     setMenuTable(table);
     setMenuVisible(true);
@@ -179,7 +177,6 @@ export default function TableScreen() {
     ]);
   };
 
-  // ── Reminder ───────────────────────────────────────────────────────────────
   const handleSetReminder = async (date: Date) => {
     if (!menuTable) return;
     const granted = await requestNotificationPermission();
@@ -189,7 +186,7 @@ export default function TableScreen() {
     }
     await cancelReminder(menuTable.id);
     await scheduleReminder(
-      `📋 ${menuTable.name}`,
+      menuTable.name,
       "Don't forget to follow up on your table!",
       date,
       menuTable.id,
@@ -206,28 +203,55 @@ export default function TableScreen() {
     setMenuTable(null);
   };
 
-  // ── UI ─────────────────────────────────────────────────────────────────────
+  const inputStyle = {
+    borderWidth: 0.5,
+    borderColor: isDark ? "#374151" : "#e5e7eb",
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 15,
+    marginBottom: 16,
+    backgroundColor: isDark ? "#111827" : "#f9fafb",
+    color: isDark ? "#f9fafb" : "#111827",
+  };
+
+  const labelStyle = {
+    fontSize: 11,
+    fontWeight: "600" as const,
+    textTransform: "uppercase" as const,
+    letterSpacing: 1,
+    color: "#9ca3af",
+    marginBottom: 8,
+  };
+
   return (
     <View
-      className="flex-1 px-5 pt-14"
-      style={{ backgroundColor: isDark ? "#111827" : accent.light }}
+      style={{ flex: 1, backgroundColor: isDark ? "#111827" : accent.light }}
     >
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Header */}
-      <View className="items-center mb-6 mt-4">
+      <View style={{ alignItems: "center", paddingTop: 64, paddingBottom: 16 }}>
         <Text
-          className="text-2xl font-bold text-center mt-3"
-          style={{ color: isDark ? "#fda4af" : accent.text }}
+          style={{
+            fontSize: 32,
+            fontWeight: "800",
+            letterSpacing: -0.5,
+            color: isDark ? "#fda4af" : accent.text,
+          }}
         >
           My Tables
         </Text>
-        <Text className="text-sm mt-1 text-center text-gray-400">
-          {tables.length} tables
+        <Text
+          style={{
+            fontSize: 13,
+            marginTop: 2,
+            color: isDark ? "#6b7280" : "#9ca3af",
+          }}
+        >
+          {tables.length} {tables.length === 1 ? "table" : "tables"}
         </Text>
       </View>
 
-      {/* Empty State */}
       {tables.length === 0 ? (
         <View
           style={{
@@ -244,88 +268,142 @@ export default function TableScreen() {
             style={{ width: 220, height: 220 }}
           />
           <Text
-            className="text-xl font-bold text-center mt-2"
-            style={{ color: isDark ? "#fda4af" : accent.text }}
+            style={{
+              fontSize: 20,
+              fontWeight: "700",
+              marginTop: 8,
+              color: isDark ? "#fda4af" : accent.text,
+            }}
           >
             No tables yet!
           </Text>
           <Text
-            className="text-sm text-center mt-2"
-            style={{ color: isDark ? "#6b7280" : "#9ca3af" }}
+            style={{
+              fontSize: 14,
+              marginTop: 6,
+              color: isDark ? "#6b7280" : "#9ca3af",
+            }}
           >
             Tap + to create your first table
           </Text>
         </View>
       ) : (
-        <>
-          {/* Table List */}
-          <FlatList
-            data={tables}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 160 }}
-            showsVerticalScrollIndicator={false}
-            renderItem={({ item, index }) => {
-              const cardBg = isDark
-                ? undefined
-                : PASTEL_LIGHT[index % PASTEL_LIGHT.length];
-              return (
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate("TableDetail", { tableId: item.id })
-                  }
-                  activeOpacity={0.8}
-                  className={`rounded-3xl px-5 py-4 mb-4 ${isDark ? "bg-gray-800" : ""}`}
-                  style={[
-                    !isDark
-                      ? {
-                          backgroundColor: cardBg,
-                          borderWidth: 1.5,
-                          borderColor: accent.primary,
-                        }
-                      : {
-                          borderWidth: 1.5,
-                          borderColor: "rgba(255,255,255,0.1)",
-                        },
-                  ]}
-                >
-                  <View className="flex-row items-center justify-between">
-                    <View className="flex-row items-center gap-3 flex-1">
-                      <Text style={{ fontSize: 28 }}>{item.emoji}</Text>
-                      <View className="flex-1">
+        <FlatList
+          data={tables}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160 }}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => {
+            const color = CARD_COLORS[index % CARD_COLORS.length];
+            const numberTotals = item.columns
+              .filter((col) => col.type === "number")
+              .map((col) => ({
+                label: col.label,
+                total: item.rows.reduce(
+                  (sum, row) => sum + (Number(row.cells[col.id]) || 0),
+                  0,
+                ),
+              }));
+
+            return (
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate("TableDetail", { tableId: item.id })
+                }
+                activeOpacity={0.8}
+                style={{
+                  borderRadius: 16,
+                  marginBottom: 10,
+                  backgroundColor: isDark ? color.dark_bg : color.bg,
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: isDark ? 0.2 : 0.05,
+                  shadowRadius: 6,
+                  elevation: 1,
+                }}
+              >
+                <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 12,
+                        flex: 1,
+                      }}
+                    >
+                      <View
+                        style={{
+                          width: 42,
+                          height: 42,
+                          borderRadius: 12,
+                          alignItems: "center",
+                          justifyContent: "center",
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.08)"
+                            : "rgba(255,255,255,0.7)",
+                        }}
+                      >
+                        <Ionicons
+                          name={item.emoji as any}
+                          size={20}
+                          color={isDark ? color.dark_icon : color.icon}
+                        />
+                      </View>
+                      <View style={{ flex: 1 }}>
                         <Text
-                          className="text-lg font-bold"
-                          style={{ color: isDark ? "#f9fafb" : accent.text }}
+                          style={{
+                            fontSize: 15,
+                            fontWeight: "700",
+                            color: isDark ? "#f9fafb" : "#111827",
+                          }}
                           numberOfLines={1}
                         >
                           {item.name}
                         </Text>
                         {item.description && (
                           <Text
-                            className="text-xs mt-0.5"
-                            style={{ color: isDark ? "#9ca3af" : "#6b7280" }}
+                            style={{
+                              fontSize: 12,
+                              marginTop: 1,
+                              color: isDark ? "#9ca3af" : "#6b7280",
+                            }}
                             numberOfLines={1}
                           >
                             {item.description}
                           </Text>
                         )}
-                        {item.date && (
-                          <Text
-                            className="text-xs mt-0.5"
-                            style={{ color: isDark ? "#6b7280" : "#9ca3af" }}
-                          >
-                            📅 {item.date}
-                          </Text>
-                        )}
                       </View>
                     </View>
-                    <View className="flex-row items-center gap-2">
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
                       <View
-                        className="px-3 py-1 rounded-full"
-                        style={{ backgroundColor: accent.primary + "22" }}
+                        style={{
+                          paddingHorizontal: 10,
+                          paddingVertical: 4,
+                          borderRadius: 20,
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.08)"
+                            : "rgba(255,255,255,0.7)",
+                        }}
                       >
                         <Text
-                          className="text-xs font-semibold"
-                          style={{ color: accent.primary }}
+                          style={{
+                            fontSize: 12,
+                            fontWeight: "600",
+                            color: isDark ? color.dark_icon : color.icon,
+                          }}
                         >
                           {item.rows.length} rows
                         </Text>
@@ -336,149 +414,311 @@ export default function TableScreen() {
                       >
                         <Ionicons
                           name="ellipsis-vertical"
-                          size={20}
+                          size={18}
                           color={isDark ? "rgba(255,255,255,0.4)" : "#9ca3af"}
                         />
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  {/* Column tags */}
-                  <View className="flex-row flex-wrap gap-2 mt-3">
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      flexWrap: "wrap",
+                      gap: 6,
+                      marginTop: 10,
+                    }}
+                  >
                     {item.columns.map((col) => (
                       <View
                         key={col.id}
-                        className="px-2 py-1 rounded-full"
                         style={{
-                          backgroundColor: isDark ? "#1f2937" : "#ffffff80",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          paddingHorizontal: 8,
+                          paddingVertical: 4,
+                          borderRadius: 8,
+                          backgroundColor: isDark
+                            ? "rgba(255,255,255,0.06)"
+                            : "rgba(255,255,255,0.6)",
                         }}
                       >
+                        <Ionicons
+                          name={COLUMN_TYPE_ICONS[col.type] as any}
+                          size={11}
+                          color={isDark ? "#9ca3af" : "#6b7280"}
+                        />
                         <Text
-                          className="text-xs"
-                          style={{ color: isDark ? "#9ca3af" : "#6b7280" }}
+                          style={{
+                            fontSize: 11,
+                            color: isDark ? "#9ca3af" : "#6b7280",
+                          }}
                         >
-                          {col.type === "text"
-                            ? "📝"
-                            : col.type === "number"
-                              ? "🔢"
-                              : col.type === "checkbox"
-                                ? "✅"
-                                : "📅"}{" "}
                           {col.label}
                         </Text>
                       </View>
                     ))}
                   </View>
 
-                  {/* Reminder badge */}
+                  {numberTotals.length > 0 && item.rows.length > 0 && (
+                    <View
+                      style={{ flexDirection: "row", gap: 12, marginTop: 8 }}
+                    >
+                      {numberTotals.map((t, i) => (
+                        <View
+                          key={i}
+                          style={{
+                            flexDirection: "row",
+                            alignItems: "center",
+                            gap: 4,
+                          }}
+                        >
+                          <Text
+                            style={{
+                              fontSize: 11,
+                              color: isDark ? "#6b7280" : "#9ca3af",
+                            }}
+                          >
+                            {t.label}:
+                          </Text>
+                          <Text
+                            style={{
+                              fontSize: 12,
+                              fontWeight: "700",
+                              color: isDark ? color.dark_icon : color.icon,
+                            }}
+                          >
+                            {t.total.toLocaleString("en-US")}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+
                   {item.reminder && (
-                    <View className="flex-row items-center mt-2 gap-1">
-                      <Text className="text-xs">🔔</Text>
-                      <Text className="text-xs text-gray-400">
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 4,
+                        marginTop: 8,
+                      }}
+                    >
+                      <Ionicons
+                        name="notifications-outline"
+                        size={11}
+                        color={isDark ? color.dark_icon : color.icon}
+                      />
+                      <Text
+                        style={{
+                          fontSize: 11,
+                          color: isDark ? color.dark_icon : color.icon,
+                        }}
+                      >
                         Reminder set
                       </Text>
                     </View>
                   )}
-                </TouchableOpacity>
-              );
-            }}
-          />
-        </>
+                </View>
+              </TouchableOpacity>
+            );
+          }}
+        />
       )}
 
-      {/* FAB */}
       <TouchableOpacity
         onPress={handleOpenCreate}
-        className="absolute bottom-32 right-6 w-16 h-16 rounded-full items-center justify-center"
-        style={{ backgroundColor: accent.primary }}
+        style={{
+          position: "absolute",
+          bottom: 100,
+          right: 24,
+          width: 56,
+          height: 56,
+          borderRadius: 28,
+          backgroundColor: accent.primary,
+          alignItems: "center",
+          justifyContent: "center",
+          shadowColor: accent.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.4,
+          shadowRadius: 8,
+          elevation: 6,
+        }}
         activeOpacity={0.8}
       >
-        <Text className="text-white text-3xl font-light">+</Text>
+        <Ionicons name="add" size={28} color="#ffffff" />
       </TouchableOpacity>
 
       {/* Context Menu */}
       <Modal visible={menuVisible} transparent animationType="fade">
         <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0,0,0,0.4)",
+            justifyContent: "flex-end",
+          }}
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
           <View
-            className={`mx-4 mb-10 rounded-3xl overflow-hidden ${isDark ? "bg-gray-800" : "bg-white"}`}
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 40,
+              borderRadius: 24,
+              overflow: "hidden",
+              backgroundColor: isDark ? "#1f2937" : "#ffffff",
+            }}
           >
             <View
-              className={`px-5 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+              style={{
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                borderBottomWidth: 0.5,
+                borderBottomColor: isDark ? "#374151" : "#f3f4f6",
+              }}
             >
               <Text
-                className={`text-sm font-medium text-center ${isDark ? "text-gray-400" : "text-gray-400"}`}
+                style={{
+                  fontSize: 13,
+                  fontWeight: "600",
+                  textAlign: "center",
+                  color: isDark ? "#9ca3af" : "#6b7280",
+                }}
               >
-                {menuTable?.emoji} {menuTable?.name}
+                {menuTable?.name}
               </Text>
             </View>
-
             <TouchableOpacity
               onPress={() => handleOpenEdit(menuTable!)}
-              className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                borderBottomWidth: 0.5,
+                borderBottomColor: isDark ? "#374151" : "#f3f4f6",
+              }}
             >
-              <Text className="text-xl mr-4">✏️</Text>
+              <Ionicons
+                name="pencil-outline"
+                size={20}
+                color={isDark ? "#f9fafb" : "#111827"}
+              />
               <Text
-                className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}
+                style={{
+                  fontSize: 15,
+                  fontWeight: "500",
+                  color: isDark ? "#f9fafb" : "#111827",
+                }}
               >
                 Edit Table
               </Text>
             </TouchableOpacity>
-
             <TouchableOpacity
               onPress={() => {
                 setMenuVisible(false);
                 setReminderModalVisible(true);
               }}
-              className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+                borderBottomWidth: 0.5,
+                borderBottomColor: isDark ? "#374151" : "#f3f4f6",
+              }}
             >
-              <Text className="text-xl mr-4">🔔</Text>
-              <View className="flex-1">
+              <Ionicons
+                name="notifications-outline"
+                size={20}
+                color={isDark ? "#f9fafb" : "#111827"}
+              />
+              <View style={{ flex: 1 }}>
                 <Text
-                  className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}
+                  style={{
+                    fontSize: 15,
+                    fontWeight: "500",
+                    color: isDark ? "#f9fafb" : "#111827",
+                  }}
                 >
                   Set Reminder
                 </Text>
                 {menuTable?.reminder && (
-                  <Text className="text-xs mt-0.5 text-gray-400">
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      color: isDark ? "#6b7280" : "#9ca3af",
+                      marginTop: 1,
+                    }}
+                  >
                     Already set — tap to change
                   </Text>
                 )}
               </View>
             </TouchableOpacity>
-
             {menuTable?.reminder && (
               <TouchableOpacity
                 onPress={handleCancelReminder}
-                className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 14,
+                  paddingHorizontal: 20,
+                  paddingVertical: 16,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: isDark ? "#374151" : "#f3f4f6",
+                }}
               >
-                <Text className="text-xl mr-4">🔕</Text>
-                <Text className="text-base font-medium text-rose-500">
+                <Ionicons
+                  name="notifications-off-outline"
+                  size={20}
+                  color="#f43f5e"
+                />
+                <Text
+                  style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}
+                >
                   Cancel Reminder
                 </Text>
               </TouchableOpacity>
             )}
-
             <TouchableOpacity
               onPress={handleDeletePress}
-              className="px-5 py-4 flex-row items-center"
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 14,
+                paddingHorizontal: 20,
+                paddingVertical: 16,
+              }}
             >
-              <Text className="text-xl mr-4">🗑️</Text>
-              <Text className="text-base font-medium text-rose-500">
+              <Ionicons name="trash-outline" size={20} color="#f43f5e" />
+              <Text
+                style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}
+              >
                 Delete Table
               </Text>
             </TouchableOpacity>
           </View>
-
           <TouchableOpacity
             onPress={() => setMenuVisible(false)}
-            className={`mx-4 mb-6 py-4 rounded-2xl items-center ${isDark ? "bg-gray-700" : "bg-white"}`}
+            style={{
+              marginHorizontal: 16,
+              marginBottom: 24,
+              paddingVertical: 16,
+              borderRadius: 16,
+              alignItems: "center",
+              backgroundColor: isDark ? "#1f2937" : "#ffffff",
+            }}
           >
             <Text
-              className={`font-semibold ${isDark ? "text-white" : "text-gray-700"}`}
+              style={{
+                fontSize: 15,
+                fontWeight: "600",
+                color: isDark ? "#f9fafb" : "#111827",
+              }}
             >
               Cancel
             </Text>
@@ -486,14 +726,12 @@ export default function TableScreen() {
         </TouchableOpacity>
       </Modal>
 
-      {/* Reminder Modal */}
       <ReminderModal
         visible={reminderModalVisible}
         onClose={() => setReminderModalVisible(false)}
         onSelectTime={handleSetReminder}
       />
 
-      {/* Edit Table Modal — extracted component */}
       {editingTable && (
         <TableEditModal
           visible={editVisible}
@@ -506,14 +744,15 @@ export default function TableScreen() {
         />
       )}
 
-      {/* Create Table Modal */}
+      {/* Create Modal */}
       <Modal visible={createVisible} transparent animationType="slide">
-        <View
+        <KeyboardAvoidingView
           style={{
             flex: 1,
-            justifyContent: "flex-end",
             backgroundColor: "rgba(0,0,0,0.5)",
+            justifyContent: "flex-end",
           }}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
           <View
             style={{
@@ -523,145 +762,175 @@ export default function TableScreen() {
               maxHeight: "90%",
             }}
           >
-            <View
-              style={{
-                width: 40,
-                height: 4,
-                borderRadius: 2,
-                backgroundColor: isDark ? "#4b5563" : "#d1d5db",
-                alignSelf: "center",
-                marginTop: 12,
-                marginBottom: 8,
-              }}
-            />
+            <View style={{ paddingVertical: 14, alignItems: "center" }}>
+              <View
+                style={{
+                  width: 40,
+                  height: 4,
+                  borderRadius: 2,
+                  backgroundColor: isDark ? "#4b5563" : "#d1d5db",
+                }}
+              />
+            </View>
 
             <ScrollView
               showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ padding: 24, paddingBottom: 40 }}
+              contentContainerStyle={{
+                paddingHorizontal: 24,
+                paddingBottom: 120,
+              }}
               keyboardShouldPersistTaps="handled"
             >
               <Text
-                className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}
+                style={{
+                  fontSize: 20,
+                  fontWeight: "700",
+                  marginBottom: 20,
+                  color: isDark ? "#f9fafb" : "#111827",
+                }}
               >
-                New Table 📋
+                New Table
               </Text>
 
-              <Text className="text-xs font-semibold uppercase tracking-widest mb-2 text-gray-400">
-                Icon
-              </Text>
+              {/* Icon */}
+              <Text style={labelStyle}>Icon</Text>
               <View
                 style={{
                   flexDirection: "row",
                   flexWrap: "wrap",
                   gap: 8,
-                  marginBottom: 16,
+                  marginBottom: 20,
                 }}
               >
-                {EMOJI_OPTIONS.map((emoji) => (
-                  <TouchableOpacity
-                    key={emoji}
-                    onPress={() => setTableEmoji(emoji)}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      alignItems: "center",
-                      justifyContent: "center",
-                      backgroundColor:
-                        tableEmoji === emoji
-                          ? accent.primary + "33"
+                {ICON_OPTIONS.map((item) => {
+                  const isSelected = tableIcon === item.icon;
+                  return (
+                    <TouchableOpacity
+                      key={item.icon}
+                      onPress={() => setTableIcon(item.icon)}
+                      style={{
+                        width: 48,
+                        height: 48,
+                        borderRadius: 14,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backgroundColor: isSelected
+                          ? item.color + "22"
                           : isDark
                             ? "#374151"
                             : "#f3f4f6",
-                      borderWidth: tableEmoji === emoji ? 2 : 0,
-                      borderColor: accent.primary,
-                    }}
-                  >
-                    <Text style={{ fontSize: 22 }}>{emoji}</Text>
-                  </TouchableOpacity>
-                ))}
+                        borderWidth: isSelected ? 2 : 0,
+                        borderColor: item.color,
+                      }}
+                    >
+                      <Ionicons
+                        name={item.icon as any}
+                        size={22}
+                        color={
+                          isSelected
+                            ? item.color
+                            : isDark
+                              ? "#9ca3af"
+                              : "#6b7280"
+                        }
+                      />
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
-              <Text className="text-xs font-semibold uppercase tracking-widest mb-2 text-gray-400">
-                Table Name
-              </Text>
+              {/* Name */}
+              <Text style={labelStyle}>Table Name</Text>
               <TextInput
-                className={`border rounded-xl px-4 mb-4 ${isDark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-gray-50 text-gray-700"}`}
-                style={{ paddingVertical: 14, fontSize: 16 }}
+                style={inputStyle}
                 placeholder="e.g. Football, Party, Trip..."
                 placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
                 value={tableName}
                 onChangeText={setTableName}
-                autoFocus
               />
 
-              <Text className="text-xs font-semibold uppercase tracking-widest mb-2 text-gray-400">
-                Description (optional)
-              </Text>
+              {/* Description */}
+              <Text style={labelStyle}>Description (optional)</Text>
               <TextInput
-                className={`border rounded-xl px-4 mb-4 ${isDark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-gray-50 text-gray-700"}`}
-                style={{ paddingVertical: 14, fontSize: 16 }}
+                style={inputStyle}
                 placeholder="e.g. Monthly session..."
                 placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
                 value={tableDescription}
                 onChangeText={setTableDescription}
               />
 
-              <Text className="text-xs font-semibold uppercase tracking-widest mb-2 text-gray-400">
-                Date (optional)
-              </Text>
-              <TextInput
-                className={`border rounded-xl px-4 mb-4 ${isDark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-gray-50 text-gray-700"}`}
-                style={{ paddingVertical: 14, fontSize: 16 }}
-                placeholder="e.g. 2026/06/13..."
-                placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
-                value={tableDate}
-                onChangeText={setTableDate}
-              />
-
-              <Text className="text-xs font-semibold uppercase tracking-widest mb-2 text-gray-400">
-                Columns
-              </Text>
-
+              {/* Columns */}
+              <Text style={labelStyle}>Columns</Text>
               {columns.map((col) => (
                 <View
                   key={col.id}
-                  className={`flex-row items-center justify-between px-4 py-3 rounded-xl mb-2 ${isDark ? "bg-gray-700" : "bg-gray-50"}`}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingHorizontal: 14,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    marginBottom: 8,
+                    backgroundColor: isDark ? "#374151" : "#f9fafb",
+                    borderWidth: 0.5,
+                    borderColor: isDark ? "#4b5563" : "#e5e7eb",
+                  }}
                 >
-                  <View className="flex-row items-center gap-2">
-                    <Text style={{ fontSize: 16 }}>
-                      {col.type === "text"
-                        ? "📝"
-                        : col.type === "number"
-                          ? "🔢"
-                          : col.type === "checkbox"
-                            ? "✅"
-                            : "📅"}
-                    </Text>
-                    <Text style={{ color: isDark ? "#f9fafb" : "#374151" }}>
-                      {col.label}
-                    </Text>
-                    <Text className="text-xs text-gray-400">({col.type})</Text>
-                  </View>
+                  <Ionicons
+                    name={COLUMN_TYPE_ICONS[col.type] as any}
+                    size={16}
+                    color={isDark ? "#9ca3af" : "#6b7280"}
+                  />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontSize: 14,
+                      color: isDark ? "#f9fafb" : "#111827",
+                      marginHorizontal: 10,
+                    }}
+                  >
+                    {col.label}
+                  </Text>
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      color: isDark ? "#6b7280" : "#9ca3af",
+                      marginRight: 10,
+                    }}
+                  >
+                    {col.type}
+                  </Text>
                   <TouchableOpacity onPress={() => handleRemoveColumn(col.id)}>
                     <Ionicons name="close-circle" size={20} color="#f43f5e" />
                   </TouchableOpacity>
                 </View>
               ))}
 
+              {/* New column input */}
               <View
-                className={`border rounded-xl px-4 py-3 mb-2 ${isDark ? "border-gray-600 bg-gray-700" : "border-gray-200 bg-gray-50"}`}
+                style={{
+                  borderWidth: 0.5,
+                  borderColor: isDark ? "#374151" : "#e5e7eb",
+                  borderRadius: 12,
+                  paddingHorizontal: 14,
+                  paddingVertical: 12,
+                  marginBottom: 10,
+                  backgroundColor: isDark ? "#111827" : "#f9fafb",
+                }}
               >
                 <TextInput
                   style={{
                     fontSize: 15,
-                    color: isDark ? "#f9fafb" : "#374151",
-                    marginBottom: 8,
+                    color: isDark ? "#f9fafb" : "#111827",
+                    marginBottom: 10,
                   }}
                   placeholder="Column name..."
                   placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
                   value={newColumnLabel}
                   onChangeText={setNewColumnLabel}
+                  blurOnSubmit={false}
+                  returnKeyType="done"
+                  onSubmitEditing={handleAddColumn}
                 />
                 <View
                   style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}
@@ -675,7 +944,7 @@ export default function TableScreen() {
                         alignItems: "center",
                         gap: 4,
                         paddingHorizontal: 10,
-                        paddingVertical: 5,
+                        paddingVertical: 6,
                         borderRadius: 20,
                         backgroundColor:
                           newColumnType === ct.type
@@ -716,32 +985,71 @@ export default function TableScreen() {
 
               <TouchableOpacity
                 onPress={handleAddColumn}
-                className="rounded-xl py-3 items-center mb-4"
-                style={{ backgroundColor: accent.primary + "22" }}
+                style={{
+                  borderRadius: 12,
+                  paddingVertical: 12,
+                  alignItems: "center",
+                  marginBottom: 24,
+                  backgroundColor: accent.primary + "22",
+                  flexDirection: "row",
+                  justifyContent: "center",
+                  gap: 6,
+                }}
               >
-                <Text style={{ color: accent.primary, fontWeight: "600" }}>
-                  + Add Column
+                <Ionicons
+                  name="add-circle-outline"
+                  size={16}
+                  color={accent.primary}
+                />
+                <Text
+                  style={{
+                    color: accent.primary,
+                    fontWeight: "600",
+                    fontSize: 14,
+                  }}
+                >
+                  Add Column
                 </Text>
               </TouchableOpacity>
 
-              <View className="flex-row gap-3">
+              <View style={{ flexDirection: "row", gap: 12 }}>
                 <TouchableOpacity
                   onPress={() => setCreateVisible(false)}
-                  className="flex-1 bg-gray-100 rounded-xl py-3 items-center"
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    backgroundColor: isDark ? "#374151" : "#f3f4f6",
+                  }}
                 >
-                  <Text className="text-gray-500 font-medium">Cancel</Text>
+                  <Text
+                    style={{
+                      fontWeight: "600",
+                      color: isDark ? "#9ca3af" : "#6b7280",
+                    }}
+                  >
+                    Cancel
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   onPress={handleCreateTable}
-                  className="flex-1 rounded-xl py-3 items-center"
-                  style={{ backgroundColor: accent.primary }}
+                  style={{
+                    flex: 1,
+                    paddingVertical: 14,
+                    borderRadius: 12,
+                    alignItems: "center",
+                    backgroundColor: accent.primary,
+                  }}
                 >
-                  <Text className="text-white font-semibold">Create</Text>
+                  <Text style={{ fontWeight: "600", color: "#ffffff" }}>
+                    Create
+                  </Text>
                 </TouchableOpacity>
               </View>
             </ScrollView>
           </View>
-        </View>
+        </KeyboardAvoidingView>{" "}
       </Modal>
     </View>
   );

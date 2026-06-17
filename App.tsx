@@ -2,7 +2,7 @@ import "./global.css";
 import { useEffect, useRef, useState } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { NavigationContainerRef } from "@react-navigation/native";
-import { View, TouchableOpacity } from "react-native";
+import { View, TouchableOpacity, Animated } from "react-native";
 import TableScreen from "./src/screens/TableScreen";
 import Toast from "react-native-toast-message";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -16,7 +16,9 @@ import ListDetailScreen from "./src/screens/ListDetailScreen";
 import SuccessScreen from "./src/screens/SuccessScreen";
 import MissingItemsScreen from "./src/screens/MissingItemsScreen";
 import TableDetailScreen from "./src/screens/TableDetailScreen";
-import OnboardingScreen, { ONBOARDING_KEY } from "./src/screens/OnboardingScreen";
+import OnboardingScreen, {
+  ONBOARDING_KEY,
+} from "./src/screens/OnboardingScreen";
 import TransitionScreen from "./src/screens/TransitionScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import { setupNotifications } from "./src/utils/notifications";
@@ -28,13 +30,36 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 function TabNavigator() {
   const { isDark, accent } = useTheme();
   const [activeTab, setActiveTab] = useState("Home");
+  const translateX = useRef(new Animated.Value(0)).current;
+  const [tabBarWidth, setTabBarWidth] = useState(0);
+  const PILL_WIDTH = 90;
+
+  const tabs = ["Home", "Table", "Settings"];
+  const tabWidth = tabBarWidth / tabs.length;
+
+  const handleTabPress = (tab: string, index: number) => {
+    setActiveTab(tab);
+    Animated.spring(translateX, {
+      toValue: index * tabWidth,
+      useNativeDriver: true,
+      damping: 15,
+      stiffness: 120,
+      mass: 0.8,
+    }).start();
+  };
+
+  const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
+    Home: { active: "home", inactive: "home-outline" },
+    Table: { active: "grid", inactive: "grid-outline" },
+    Settings: { active: "settings", inactive: "settings-outline" },
+  };
 
   const renderScreen = () => {
     switch (activeTab) {
-      case "Home": return <HomeScreen />
-      case "Table": return <TableScreen />
-      case "Settings": return <SettingsScreen />
-      default: return <HomeScreen />
+      case "Home": return <HomeScreen />;
+      case "Table": return <TableScreen />;
+      case "Settings": return <SettingsScreen />;
+      default: return <HomeScreen />;
     }
   };
 
@@ -42,7 +67,7 @@ function TabNavigator() {
     <View style={{ flex: 1 }}>
       {renderScreen()}
 
-      {/* Custom Pill Tab Bar — 3 tabs */}
+      {/* Tab Bar */}
       <View
         style={{
           position: "absolute",
@@ -54,49 +79,53 @@ function TabNavigator() {
           backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
           flexDirection: "row",
           alignItems: "center",
-          justifyContent: "space-around",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
           shadowOpacity: 0.15,
           shadowRadius: 12,
           elevation: 8,
         }}
+        onLayout={(e) => {
+          const width = e.nativeEvent.layout.width;
+          setTabBarWidth(width);
+          translateX.setValue(tabs.indexOf(activeTab) * (width / tabs.length));
+        }}
       >
-        {/* Home */}
-        <TouchableOpacity
-          onPress={() => setActiveTab("Home")}
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <Ionicons
-            name={activeTab === "Home" ? "home" : "home-outline"}
-            size={24}
-            color={activeTab === "Home" ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
+        {/* Sliding pill — only render after width is known */}
+        {tabBarWidth > 0 && (
+          <Animated.View
+            style={{
+              position: "absolute",
+              width: PILL_WIDTH,
+              height: 44,
+              borderRadius: 22,
+              backgroundColor: isDark ? "#3a3a3c" : "#f3f4f6",
+              transform: [{ translateX }],
+              left: (tabWidth - PILL_WIDTH) / 2,
+            }}
           />
-        </TouchableOpacity>
+        )}
 
-        {/* Table */}
-        <TouchableOpacity
-          onPress={() => setActiveTab("Table")}
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <Ionicons
-            name={activeTab === "Table" ? "grid" : "grid-outline"}
-            size={24}
-            color={activeTab === "Table" ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
-          />
-        </TouchableOpacity>
-
-        {/* Settings */}
-        <TouchableOpacity
-          onPress={() => setActiveTab("Settings")}
-          style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-        >
-          <Ionicons
-            name={activeTab === "Settings" ? "settings" : "settings-outline"}
-            size={24}
-            color={activeTab === "Settings" ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
-          />
-        </TouchableOpacity>
+        {/* Tabs */}
+        {tabs.map((tab, index) => (
+          <TouchableOpacity
+            key={tab}
+            onPress={() => handleTabPress(tab, index)}
+            style={{
+              flex: 1,
+              alignItems: "center",
+              justifyContent: "center",
+              height: 64,
+            }}
+            activeOpacity={1}
+          >
+            <Ionicons
+              name={activeTab === tab ? TAB_ICONS[tab].active : TAB_ICONS[tab].inactive}
+              size={22}
+              color={activeTab === tab ? accent.primary : isDark ? "#6b7280" : "#9ca3af"}
+            />
+          </TouchableOpacity>
+        ))}
       </View>
     </View>
   );
@@ -104,13 +133,17 @@ function TabNavigator() {
 
 // ── Root Stack ─────────────────────────────────────────────────────────────────
 function RootNavigator() {
-  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
-  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const [initialRoute, setInitialRoute] = useState<
+    keyof RootStackParamList | null
+  >(null);
+  const navigationRef =
+    useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
     const checkOnboarding = async () => {
       const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
-      setInitialRoute(seen ? "Tabs" : "Onboarding");
+      setInitialRoute("Onboarding") // ← force show onboarding
+      // setInitialRoute(seen ? "Tabs" : "Onboarding");
     };
     checkOnboarding();
   }, []);
@@ -118,7 +151,9 @@ function RootNavigator() {
   useEffect(() => {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
-        const listId = response.notification.request.content.data?.listId as string | undefined;
+        const listId = response.notification.request.content.data?.listId as
+          | string
+          | undefined;
         if (listId && navigationRef.current) {
           navigationRef.current.navigate("Tabs" as any);
           setTimeout(() => {
@@ -138,13 +173,41 @@ function RootNavigator() {
         initialRouteName={initialRoute}
         screenOptions={{ animation: "fade" }}
       >
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Transition" component={TransitionScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Tabs" component={TabNavigator} options={{ headerShown: false }} />
-        <Stack.Screen name="ListDetail" component={ListDetailScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="TableDetail" component={TableDetailScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Success" component={SuccessScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="MissingItems" component={MissingItemsScreen} options={{ headerShown: false }} />
+        <Stack.Screen
+          name="Onboarding"
+          component={OnboardingScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Transition"
+          component={TransitionScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Tabs"
+          component={TabNavigator}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ListDetail"
+          component={ListDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="TableDetail"
+          component={TableDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Success"
+          component={SuccessScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MissingItems"
+          component={MissingItemsScreen}
+          options={{ headerShown: false }}
+        />
       </Stack.Navigator>
     </NavigationContainer>
   );

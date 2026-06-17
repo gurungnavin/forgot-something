@@ -41,18 +41,18 @@ export default function ListDetailScreen() {
   const { isDark, accent } = useTheme();
   const { lists, refreshLists, editList } = useLists();
 
-  const [list, setList] = useState<List | null>(null);
+  const [list, setList]                       = useState<List | null>(null);
   const [addModalVisible, setAddModalVisible] = useState(false);
-  const [newItemLabel, setNewItemLabel] = useState("");
+  const [newItemLabel, setNewItemLabel]       = useState("");
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editingItem, setEditingItem] = useState<Item | null>(null);
-  const [editLabel, setEditLabel] = useState("");
-  const [menuItem, setMenuItem] = useState<Item | null>(null);
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [editingItem, setEditingItem]         = useState<Item | null>(null);
+  const [editLabel, setEditLabel]             = useState("");
+  const [menuItem, setMenuItem]               = useState<Item | null>(null);
+  const [menuVisible, setMenuVisible]         = useState(false);
   const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
-  const [toastMessage, setToastMessage] = useState("");
-  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage]       = useState("");
+  const [toastVisible, setToastVisible]       = useState(false);
 
   const swipeableRefs = useRef<Map<string, any>>(new Map());
 
@@ -67,7 +67,7 @@ export default function ListDetailScreen() {
     swipeableRefs.current.forEach((ref) => ref?.close());
   };
 
-  // ── Load ───────────────────────────────────────────────────────────────────
+  // ── Load list on focus ────────────────────────────────────────────────────
   useFocusEffect(
     useCallback(() => {
       loadLists().then((lists) => {
@@ -79,9 +79,7 @@ export default function ListDetailScreen() {
 
   const updateList = async (updatedList: List) => {
     const allLists = await loadLists();
-    const updated = allLists.map((l) =>
-      l.id === updatedList.id ? updatedList : l
-    );
+    const updated = allLists.map((l) => l.id === updatedList.id ? updatedList : l);
     await saveLists(updated);
     setList(updatedList);
   };
@@ -97,7 +95,7 @@ export default function ListDetailScreen() {
     return `${date.toLocaleDateString()} ${h}:${minutes} ${ampm}`;
   };
 
-  // ── Add Item ───────────────────────────────────────────────────────────────
+  // ── Add item ──────────────────────────────────────────────────────────────
   const handleAddItem = () => {
     if (!list) return;
     if (list.items.length >= MAX_ITEMS) {
@@ -119,10 +117,10 @@ export default function ListDetailScreen() {
     await updateList({ ...list, items: [...list.items, newItem] });
     setNewItemLabel("");
     setAddModalVisible(false);
-    showToast("✅ Item added!");
+    showToast("Item added!");
   };
 
-  // ── Toggle ─────────────────────────────────────────────────────────────────
+  // ── Toggle item ───────────────────────────────────────────────────────────
   const handleToggleItem = async (itemId: string) => {
     if (!list) return;
     const updatedItems = list.items.map((item) =>
@@ -132,13 +130,13 @@ export default function ListDetailScreen() {
     if (allDone && list.reminder) {
       await cancelReminder(list.id);
       await updateList({ ...list, items: updatedItems, reminder: undefined });
-      showToast("✅ List complete! Reminder cancelled.");
+      showToast("List complete! Reminder cancelled.");
       return;
     }
     await updateList({ ...list, items: updatedItems });
   };
 
-  // ── Edit Item ──────────────────────────────────────────────────────────────
+  // ── Edit item ─────────────────────────────────────────────────────────────
   const openEdit = (item: Item) => {
     closeAllSwipeables();
     setEditingItem(item);
@@ -162,15 +160,15 @@ export default function ListDetailScreen() {
     closeAllSwipeables();
     setEditModalVisible(false);
     setEditingItem(null);
-    showToast("✏️ Item updated!");
+    showToast("Item updated!");
   };
 
-  // ── Delete Item ────────────────────────────────────────────────────────────
+  // ── Delete item ───────────────────────────────────────────────────────────
   const handleDeleteItem = async (itemId: string) => {
     if (!list) return;
     const updatedItems = list.items.filter((i) => i.id !== itemId);
     await updateList({ ...list, items: updatedItems });
-    showToast("🗑️ Item deleted!");
+    showToast("Item deleted!");
   };
 
   const handleDeletePress = () => {
@@ -178,73 +176,52 @@ export default function ListDetailScreen() {
     if (!menuItem || !list) return;
     Alert.alert("Delete Item", `Delete "${menuItem.label}"?`, [
       { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => handleDeleteItem(menuItem.id),
-      },
+      { text: "Delete", style: "destructive", onPress: () => handleDeleteItem(menuItem.id) },
     ]);
   };
 
-  // ── Reset All ──────────────────────────────────────────────────────────────
+  // ── Reset all ─────────────────────────────────────────────────────────────
   const handleResetAll = () => {
     setHeaderMenuVisible(false);
-    if (!list || list.items.length === 0) {
-      showToast("No items to reset!");
-      return;
-    }
-    Alert.alert("Reset All", "Uncheck all items? Progress will go back to 0%.", [
+    if (!list || list.items.length === 0) { showToast("No items to reset!"); return; }
+    Alert.alert("Reset All", "Uncheck all items?", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Reset",
-        style: "destructive",
+        text: "Reset", style: "destructive",
         onPress: async () => {
           if (!list) return;
-          const resetItems = list.items.map((i) => ({ ...i, checked: false }));
-          await updateList({ ...list, items: resetItems });
-          showToast("🔄 All items reset!");
+          await updateList({ ...list, items: list.items.map((i) => ({ ...i, checked: false })) });
+          showToast("All items reset!");
         },
       },
     ]);
   };
 
-  // ── Delete All ─────────────────────────────────────────────────────────────
+  // ── Delete all ────────────────────────────────────────────────────────────
   const handleDeleteAll = () => {
     setHeaderMenuVisible(false);
-    if (!list || list.items.length === 0) {
-      showToast("No items to delete!");
-      return;
-    }
+    if (!list || list.items.length === 0) { showToast("No items to delete!"); return; }
     Alert.alert("Delete All", "Delete all items? This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Delete All",
-        style: "destructive",
+        text: "Delete All", style: "destructive",
         onPress: async () => {
           if (!list) return;
           await updateList({ ...list, items: [] });
-          showToast("🗑️ All items deleted!");
+          showToast("All items deleted!");
         },
       },
     ]);
   };
 
-  // ── Reminder ───────────────────────────────────────────────────────────────
+  // ── Reminder ──────────────────────────────────────────────────────────────
   const handleSetReminder = async (date: Date) => {
     const granted = await requestNotificationPermission();
-    if (!granted) {
-      Alert.alert("Permission Denied", "Enable notifications in Settings.");
-      return;
-    }
+    if (!granted) { Alert.alert("Permission Denied", "Enable notifications in Settings."); return; }
     await cancelReminder(list!.id);
-    await scheduleReminder(
-      `📋 ${list!.name}`,
-      "Don't forget to check your list before you go!",
-      date,
-      list!.id,
-    );
+    await scheduleReminder(`${list!.name}`, "Don't forget to check your list!", date, list!.id);
     await updateList({ ...list!, reminder: { time: date.toISOString() } });
-    showToast("🔔 Reminder set!");
+    showToast("Reminder set!");
   };
 
   const handleCancelReminder = async () => {
@@ -252,16 +229,12 @@ export default function ListDetailScreen() {
     if (!list) return;
     await cancelReminder(list.id);
     await updateList({ ...list, reminder: undefined });
-    showToast("🔕 Reminder cancelled!");
+    showToast("Reminder cancelled!");
   };
 
-  // ── Checkout ───────────────────────────────────────────────────────────────
+  // ── Checkout ──────────────────────────────────────────────────────────────
   const handleCheckout = () => {
-    if (!list) return;
-    if (list.items.length === 0) {
-      Alert.alert("No Items", "Add some items to your list first!");
-      return;
-    }
+    if (!list || list.items.length === 0) return;
     const missing = list.items.filter((i) => !i.checked).map((i) => i.label);
     if (missing.length > 0) {
       navigation.navigate("MissingItems", { missing, listId });
@@ -271,112 +244,132 @@ export default function ListDetailScreen() {
   };
 
   const checkedCount = list?.items.filter((i) => i.checked).length ?? 0;
-  const totalCount = list?.items.length ?? 0;
-  const progress = totalCount > 0 ? checkedCount / totalCount : 0;
-  const allChecked = totalCount > 0 && checkedCount === totalCount;
+  const totalCount   = list?.items.length ?? 0;
+  const progress     = totalCount > 0 ? checkedCount / totalCount : 0;
+  const allChecked   = totalCount > 0 && checkedCount === totalCount;
+  const category     = CATEGORIES.find((c) => c.key === list?.category);
 
-  // ── UI ─────────────────────────────────────────────────────────────────────
   return (
-    <View
-      className="flex-1 px-5 pt-14"
-      style={{ backgroundColor: isDark ? "#111827" : accent.light }}
-    >
+    <View style={{ flex: 1, backgroundColor: isDark ? "#111827" : accent.light }}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
-      {/* Top Row */}
-      <View className="flex-row items-center justify-between mb-4">
+      {/* ── Top navigation row ───────────────────────────────────────────── */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: 20, paddingTop: 56, paddingBottom: 12,
+      }}>
         <TouchableOpacity
           onPress={() => navigation.popToTop()}
-          className={`flex-row items-center px-4 py-2 rounded-xl ${isDark ? "bg-gray-800" : "bg-white"}`}
+          style={{
+            flexDirection: 'row', alignItems: 'center', gap: 6,
+            paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          }}
           activeOpacity={0.7}
         >
-          <Text className="text-base font-semibold" style={{ color: accent.primary }}>
-            ← Back
-          </Text>
+          <Ionicons name="chevron-back" size={16} color={accent.primary} />
+          <Text style={{ fontSize: 15, fontWeight: '600', color: accent.primary }}>Back</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           onPress={() => setHeaderMenuVisible(true)}
-          className={`w-10 h-10 rounded-xl items-center justify-center ${isDark ? "bg-gray-800" : "bg-white"}`}
+          style={{
+            width: 40, height: 40, borderRadius: 12,
+            alignItems: 'center', justifyContent: 'center',
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          }}
           activeOpacity={0.7}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
         >
-          <Ionicons
-            name="ellipsis-horizontal"
-            size={20}
-            color={isDark ? "#9ca3af" : "#6b7280"}
-          />
+          <Ionicons name="ellipsis-horizontal" size={20} color={isDark ? '#9ca3af' : '#6b7280'} />
         </TouchableOpacity>
       </View>
 
-      {/* Title */}
-      <View className="flex-row items-center mb-1 gap-3">
-        {list?.category && (
-          <View
-            className="w-10 h-10 rounded-2xl items-center justify-center"
-            style={{ backgroundColor: isDark ? "#1f2937" : accent.primary + "22" }}
-          >
-            <Ionicons
-              name={(CATEGORIES.find((c) => c.key === list.category)?.icon as any) ?? "list-outline"}
-              size={20}
-              color={isDark ? "#ffffffaa" : accent.primary}
-            />
+      {/* ── List header ──────────────────────────────────────────────────── */}
+      <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 }}>
+          {category && (
+            <View style={{
+              width: 40, height: 40, borderRadius: 12,
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: isDark ? '#1f2937' : accent.primary + '18',
+            }}>
+              <Ionicons
+                name={category.icon as any}
+                size={20}
+                color={isDark ? '#fda4af' : accent.primary}
+              />
+            </View>
+          )}
+          <Text style={{
+            fontSize: 26, fontWeight: '800', flex: 1, letterSpacing: -0.5,
+            color: isDark ? '#f9fafb' : '#111827',
+          }} numberOfLines={1}>
+            {list?.name ?? "..."}
+          </Text>
+        </View>
+
+        {/* Item count + reminder */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <Text style={{ fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
+            {checkedCount}/{totalCount} items checked
+          </Text>
+          {list?.reminder && !allChecked && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+              <Ionicons name="notifications-outline" size={12} color={isDark ? '#6b7280' : '#9ca3af'} />
+              <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af' }}>
+                {formatTime(list.reminder.time)}
+              </Text>
+            </View>
+          )}
+        </View>
+
+        {/* Progress bar */}
+        <View style={{ marginTop: 10 }}>
+          <ProgressBar progress={progress} showLabel={!allChecked} />
+        </View>
+
+        {/* Limit warning */}
+        {list && list.items.length >= MAX_ITEMS && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+            backgroundColor: isDark ? '#292524' : '#fef3c7',
+            borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10,
+            marginTop: 10,
+          }}>
+            <Ionicons name="warning-outline" size={16} color="#f59e0b" />
+            <Text style={{ fontSize: 13, color: '#f59e0b', fontWeight: '500' }}>
+              You've reached the {MAX_ITEMS} item limit
+            </Text>
           </View>
         )}
-        <Text
-          className="text-3xl font-bold flex-1"
-          style={{ color: isDark ? "#fda4af" : accent.text }}
-        >
-          {list?.name ?? "..."}
-        </Text>
       </View>
 
-      <Text className={`text-sm ${isDark ? "text-gray-400" : "text-gray-400"}`}>
-        {checkedCount}/{totalCount} items checked
-      </Text>
-
-      {/* Reminder Badge */}
-      {list?.reminder && !allChecked && (
-        <View className="flex-row items-center mt-1 mb-1 gap-1">
-          <Text className="text-xs">🔔</Text>
-          <Text className={`text-xs ${isDark ? "text-gray-400" : "text-gray-400"}`}>
-            Reminder: {formatTime(list.reminder.time)}
-          </Text>
-        </View>
-      )}
-
-      {/* Progress Bar */}
-      <View className="mt-3 mb-2">
-        <ProgressBar progress={progress} showLabel={!allChecked} />
-      </View>
-
-      {/* Limit Warning */}
-      {list && list.items.length >= MAX_ITEMS && (
-        <View className="bg-yellow-100 border border-yellow-300 rounded-2xl px-4 py-3 mb-4">
-          <Text className="text-yellow-700 text-sm font-medium">
-            ⚠️ You've reached the {MAX_ITEMS} item limit!
-          </Text>
-        </View>
-      )}
-
-      {/* Empty State */}
+      {/* ── Empty state ──────────────────────────────────────────────────── */}
       {totalCount === 0 && (
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-5xl mb-4">📝</Text>
-          <Text className={`text-lg font-semibold ${isDark ? "text-gray-300" : "text-gray-500"}`}>
-            No items yet!
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingBottom: 80 }}>
+          <View style={{
+            width: 64, height: 64, borderRadius: 20,
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+            alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+          }}>
+            <Ionicons name="list-outline" size={32} color={isDark ? '#4b5563' : '#d1d5db'} />
+          </View>
+          <Text style={{ fontSize: 16, fontWeight: '600', color: isDark ? '#6b7280' : '#9ca3af' }}>
+            No items yet
           </Text>
-          <Text className={`text-sm mt-1 ${isDark ? "text-gray-500" : "text-gray-400"}`}>
+          <Text style={{ fontSize: 13, color: isDark ? '#4b5563' : '#d1d5db', marginTop: 4 }}>
             Tap + to add your first item
           </Text>
         </View>
       )}
 
-      {/* Items List */}
+      {/* ── Items list ───────────────────────────────────────────────────── */}
       <FlatList
         data={list?.items ?? []}
         keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 160 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160 }}
+        showsVerticalScrollIndicator={false}
         renderItem={({ item, index }) => (
           <ChecklistItem
             item={item}
@@ -384,251 +377,333 @@ export default function ListDetailScreen() {
             onToggle={handleToggleItem}
             onEdit={openEdit}
             onDelete={handleDeleteItem}
-            onMenuPress={(item) => {
-              setMenuItem(item);
-              setMenuVisible(true);
-            }}
+            onMenuPress={(item) => { setMenuItem(item); setMenuVisible(true); }}
             swipeableRef={(ref) => swipeableRefs.current.set(item.id, ref)}
           />
         )}
       />
 
-      {/* Bottom Buttons */}
-      <View className="absolute bottom-8 left-5 right-5 flex-row gap-3">
-        <TouchableOpacity
-          onPress={handleCheckout}
-          disabled={totalCount === 0}
-          className={`flex-1 py-4 rounded-2xl items-center ${totalCount === 0 ? "bg-gray-200" : ""}`}
-          style={totalCount > 0 ? { backgroundColor: allChecked ? "#4ade80" : accent.primary } : {}}
-          activeOpacity={0.8}
-        >
-          <Text className="text-white font-semibold text-base">
-            {allChecked ? "✅ All Done! Checkout" : "🚪 Checkout"}
-          </Text>
-        </TouchableOpacity>
+      {/* ── Bottom buttons ───────────────────────────────────────────────── */}
+      <View style={{
+        position: 'absolute', bottom: 32, left: 20, right: 20,
+        flexDirection: 'row', gap: 12,
+      }}>
+        {/* Checkout — only show when items exist */}
+        {totalCount > 0 && (
+          <TouchableOpacity
+            onPress={handleCheckout}
+            style={{
+              flex: 1, paddingVertical: 16, borderRadius: 16,
+              alignItems: 'center', justifyContent: 'center',
+              flexDirection: 'row', gap: 8,
+              backgroundColor: allChecked ? '#22c55e' : accent.primary,
+            }}
+            activeOpacity={0.8}
+          >
+            <Ionicons
+              name={allChecked ? "checkmark-circle-outline" : "exit-outline"}
+              size={18}
+              color="#ffffff"
+            />
+            <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 15 }}>
+              {allChecked ? "All done! Checkout" : "Checkout"}
+            </Text>
+          </TouchableOpacity>
+        )}
 
+        {/* Add item FAB */}
         <TouchableOpacity
           onPress={handleAddItem}
-          className="w-14 h-14 rounded-2xl items-center justify-center"
-          style={{ backgroundColor: accent.primary }}
+          style={{
+            width: 56, height: 56, borderRadius: 16,
+            alignItems: 'center', justifyContent: 'center',
+            backgroundColor: accent.primary,
+            shadowColor: accent.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
+          }}
           activeOpacity={0.8}
         >
-          <Text className="text-white text-2xl font-light">+</Text>
+          <Ionicons name="add" size={26} color="#ffffff" />
         </TouchableOpacity>
       </View>
 
-      {/* Header Menu */}
+      {/* ── Header menu ──────────────────────────────────────────────────── */}
       <Modal visible={headerMenuVisible} transparent animationType="fade">
         <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
           activeOpacity={1}
           onPress={() => setHeaderMenuVisible(false)}
         >
-          <View className={`mx-4 mb-10 rounded-3xl overflow-hidden ${isDark ? "bg-gray-800" : "bg-white"}`}>
-            <View className={`px-5 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}>
-              <Text className={`text-md font-medium text-center ${isDark ? "text-gray-400" : "text-gray-400"}`}>
+          <View style={{
+            marginHorizontal: 16, marginBottom: 40,
+            borderRadius: 24, overflow: 'hidden',
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          }}>
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 16,
+              borderBottomWidth: 0.5, borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+            }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', textAlign: 'center', color: isDark ? '#9ca3af' : '#6b7280' }}>
                 {list?.name}
               </Text>
             </View>
 
             <TouchableOpacity
               onPress={handleResetAll}
-              className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 14,
+                paddingHorizontal: 20, paddingVertical: 16,
+                borderBottomWidth: 0.5, borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+              }}
             >
-              <Ionicons name="refresh-outline" size={22} color="#f43f5e" style={{ marginRight: 16 }} />
+              <Ionicons name="refresh-outline" size={20} color={isDark ? '#f9fafb' : '#111827'} />
               <View>
-                <Text className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}>
+                <Text style={{ fontSize: 15, fontWeight: '500', color: isDark ? '#f9fafb' : '#111827' }}>
                   Reset All
                 </Text>
-                <Text className="text-xs mt-0.5 text-gray-400">
-                  Uncheck all items → back to 0%
+                <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af', marginTop: 1 }}>
+                  Uncheck all items
                 </Text>
               </View>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handleDeleteAll}
-              className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 14,
+                paddingHorizontal: 20, paddingVertical: 16,
+                borderBottomWidth: 0.5, borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+              }}
             >
-              <Ionicons name="trash-outline" size={22} color="#f43f5e" style={{ marginRight: 16 }} />
+              <Ionicons name="trash-outline" size={20} color="#f43f5e" />
               <View>
-                <Text className="text-base font-medium text-rose-500">Delete All</Text>
-                <Text className="text-xs mt-0.5 text-gray-400">
-                  Remove all items from this list
+                <Text style={{ fontSize: 15, fontWeight: '500', color: '#f43f5e' }}>Delete All</Text>
+                <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af', marginTop: 1 }}>
+                  Remove all items
                 </Text>
               </View>
             </TouchableOpacity>
 
             {!allChecked && (
-              <>
-                <TouchableOpacity
-                  onPress={() => { setHeaderMenuVisible(false); setReminderModalVisible(true); }}
-                  className={`px-5 py-4 flex-row items-center ${list?.reminder ? `border-b ${isDark ? "border-gray-700" : "border-gray-100"}` : ""}`}
-                >
-                  <Ionicons name="notifications-outline" size={22} color="#f43f5e" style={{ marginRight: 16 }} />
-                  <View>
-                    <Text className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}>
-                      Set Reminder
-                    </Text>
-                    <Text className="text-xs mt-0.5 text-gray-400">
-                      {list?.reminder ? `Set: ${formatTime(list.reminder.time)}` : "Remind me about this list"}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { setHeaderMenuVisible(false); setReminderModalVisible(true); }}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 14,
+                  paddingHorizontal: 20, paddingVertical: 16,
+                  borderBottomWidth: list?.reminder ? 0.5 : 0,
+                  borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+                }}
+              >
+                <Ionicons name="notifications-outline" size={20} color={isDark ? '#f9fafb' : '#111827'} />
+                <View>
+                  <Text style={{ fontSize: 15, fontWeight: '500', color: isDark ? '#f9fafb' : '#111827' }}>
+                    Set Reminder
+                  </Text>
+                  <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af', marginTop: 1 }}>
+                    {list?.reminder ? `Set: ${formatTime(list.reminder.time)}` : 'Remind me about this list'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            )}
 
-                {list?.reminder && (
-                  <TouchableOpacity
-                    onPress={handleCancelReminder}
-                    className="px-5 py-4 flex-row items-center"
-                  >
-                    <Ionicons name="notifications-off-outline" size={22} color="#f43f5e" style={{ marginRight: 16 }} />
-                    <Text className={`text-base ${isDark ? "text-white" : "text-gray-700"}`}>
-                      Cancel Reminder
-                    </Text>
-                  </TouchableOpacity>
-                )}
-              </>
+            {list?.reminder && !allChecked && (
+              <TouchableOpacity
+                onPress={handleCancelReminder}
+                style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16 }}
+              >
+                <Ionicons name="notifications-off-outline" size={20} color="#f43f5e" />
+                <Text style={{ fontSize: 15, fontWeight: '500', color: '#f43f5e' }}>Cancel Reminder</Text>
+              </TouchableOpacity>
             )}
           </View>
 
           <TouchableOpacity
             onPress={() => setHeaderMenuVisible(false)}
-            className={`mx-4 mb-6 py-4 rounded-2xl items-center ${isDark ? "bg-gray-700" : "bg-white"}`}
+            style={{
+              marginHorizontal: 16, marginBottom: 24, paddingVertical: 16,
+              borderRadius: 16, alignItems: 'center',
+              backgroundColor: isDark ? '#1f2937' : '#ffffff',
+            }}
           >
-            <Text className={`font-semibold ${isDark ? "text-white" : "text-gray-700"}`}>
-              Cancel
-            </Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: isDark ? '#f9fafb' : '#111827' }}>Cancel</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
-      {/* Item Context Menu */}
+      {/* ── Item context menu ────────────────────────────────────────────── */}
       <Modal visible={menuVisible} transparent animationType="fade">
         <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View className={`mx-4 mb-10 rounded-3xl overflow-hidden ${isDark ? "bg-gray-800" : "bg-white"}`}>
-            <View className={`px-5 py-4 border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}>
-              <Text className={`text-sm font-medium text-center ${isDark ? "text-gray-400" : "text-gray-400"}`}>
+          <View style={{
+            marginHorizontal: 16, marginBottom: 40,
+            borderRadius: 24, overflow: 'hidden',
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          }}>
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 16,
+              borderBottomWidth: 0.5, borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+            }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', textAlign: 'center', color: isDark ? '#9ca3af' : '#6b7280' }}>
                 {menuItem?.label}
               </Text>
             </View>
+
             <TouchableOpacity
               onPress={handleEditPress}
-              className={`px-5 py-4 flex-row items-center border-b ${isDark ? "border-gray-700" : "border-gray-100"}`}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 14,
+                paddingHorizontal: 20, paddingVertical: 16,
+                borderBottomWidth: 0.5, borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+              }}
             >
-              <Ionicons name="pencil-outline" size={22} color={isDark ? "#ffffff" : "#111827"} style={{ marginRight: 16 }} />
-              <Text className={`text-base font-medium ${isDark ? "text-white" : "text-gray-700"}`}>
+              <Ionicons name="pencil-outline" size={20} color={isDark ? '#f9fafb' : '#111827'} />
+              <Text style={{ fontSize: 15, fontWeight: '500', color: isDark ? '#f9fafb' : '#111827' }}>
                 Edit Item
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               onPress={handleDeletePress}
-              className="px-5 py-4 flex-row items-center"
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 20, paddingVertical: 16 }}
             >
-              <Ionicons name="trash-outline" size={22} color="#f43f5e" style={{ marginRight: 16 }} />
-              <Text className="text-base font-medium text-rose-500">Delete Item</Text>
+              <Ionicons name="trash-outline" size={20} color="#f43f5e" />
+              <Text style={{ fontSize: 15, fontWeight: '500', color: '#f43f5e' }}>Delete Item</Text>
             </TouchableOpacity>
           </View>
+
           <TouchableOpacity
             onPress={() => setMenuVisible(false)}
-            className={`mx-4 mb-6 py-4 rounded-2xl items-center ${isDark ? "bg-gray-700" : "bg-white"}`}
+            style={{
+              marginHorizontal: 16, marginBottom: 24, paddingVertical: 16,
+              borderRadius: 16, alignItems: 'center',
+              backgroundColor: isDark ? '#1f2937' : '#ffffff',
+            }}
           >
-            <Text className={`font-semibold ${isDark ? "text-white" : "text-gray-700"}`}>
-              Cancel
-            </Text>
+            <Text style={{ fontSize: 15, fontWeight: '600', color: isDark ? '#f9fafb' : '#111827' }}>Cancel</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
-      {/* Reminder Modal */}
+      {/* ── Reminder modal ───────────────────────────────────────────────── */}
       <ReminderModal
         visible={reminderModalVisible}
         onClose={() => setReminderModalVisible(false)}
         onSelectTime={handleSetReminder}
       />
 
-      {/* Add Item Modal */}
+      {/* ── Add item modal ───────────────────────────────────────────────── */}
       <KeyboardModal
         visible={addModalVisible}
         onClose={() => { setAddModalVisible(false); setNewItemLabel(""); }}
       >
-        <View className={`w-full rounded-3xl px-6 py-6 ${isDark ? "bg-gray-800" : "bg-white"}`}>
-          <Text className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}>
-            Add Item 📝
+        <View style={{
+          width: '100%', borderRadius: 24,
+          paddingHorizontal: 24, paddingVertical: 24,
+          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+        }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16, color: isDark ? '#f9fafb' : '#111827' }}>
+            New Item
           </Text>
           <TextInput
-            className={`border rounded-xl px-4 text-base mb-4 ${isDark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-gray-50 text-gray-700"}`}
-            style={{ paddingVertical: 16, fontSize: 16 }}
+            style={{
+              borderWidth: 0.5, borderColor: isDark ? '#374151' : '#e5e7eb',
+              borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+              fontSize: 15, marginBottom: 16,
+              backgroundColor: isDark ? '#111827' : '#f9fafb',
+              color: isDark ? '#f9fafb' : '#111827',
+            }}
             placeholder="e.g. Passport, Charger, Keys..."
-            placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
+            placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
             value={newItemLabel}
             onChangeText={setNewItemLabel}
             autoFocus
             onSubmitEditing={handleSaveItem}
           />
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             <TouchableOpacity
               onPress={() => { setAddModalVisible(false); setNewItemLabel(""); }}
-              className="flex-1 bg-gray-100 rounded-xl py-3 items-center"
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: isDark ? '#374151' : '#f3f4f6' }}
             >
-              <Text className="text-gray-500 font-medium">Cancel</Text>
+              <Text style={{ fontWeight: '600', color: isDark ? '#9ca3af' : '#6b7280' }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSaveItem}
-              className="flex-1 rounded-xl py-3 items-center"
-              style={{ backgroundColor: accent.primary }}
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: accent.primary }}
             >
-              <Text className="text-white font-semibold">Add</Text>
+              <Text style={{ fontWeight: '600', color: '#ffffff' }}>Add</Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardModal>
 
-      {/* Edit Item Modal */}
+      {/* ── Edit item modal ──────────────────────────────────────────────── */}
       <KeyboardModal
         visible={editModalVisible}
         onClose={() => { closeAllSwipeables(); setEditModalVisible(false); setEditingItem(null); }}
       >
-        <View className={`w-full rounded-3xl px-6 py-6 ${isDark ? "bg-gray-800" : "bg-white"}`}>
-          <Text className={`text-xl font-bold mb-4 ${isDark ? "text-white" : "text-gray-700"}`}>
-            Edit Item ✏️
+        <View style={{
+          width: '100%', borderRadius: 24,
+          paddingHorizontal: 24, paddingVertical: 24,
+          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+        }}>
+          <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 16, color: isDark ? '#f9fafb' : '#111827' }}>
+            Edit Item
           </Text>
           <TextInput
-            className={`border rounded-xl px-4 text-base mb-4 ${isDark ? "border-gray-600 bg-gray-700 text-white" : "border-gray-200 bg-gray-50 text-gray-700"}`}
-            style={{ paddingVertical: 16, fontSize: 16 }}
+            style={{
+              borderWidth: 0.5, borderColor: isDark ? '#374151' : '#e5e7eb',
+              borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+              fontSize: 15, marginBottom: 16,
+              backgroundColor: isDark ? '#111827' : '#f9fafb',
+              color: isDark ? '#f9fafb' : '#111827',
+            }}
             placeholder="Item name..."
-            placeholderTextColor={isDark ? "#6b7280" : "#9ca3af"}
+            placeholderTextColor={isDark ? '#6b7280' : '#9ca3af'}
             value={editLabel}
             onChangeText={setEditLabel}
             autoFocus
             onSubmitEditing={handleSaveEdit}
           />
-          <View className="flex-row gap-3">
+          <View style={{ flexDirection: 'row', gap: 12 }}>
             <TouchableOpacity
               onPress={() => { closeAllSwipeables(); setEditModalVisible(false); setEditingItem(null); }}
-              className="flex-1 bg-gray-100 rounded-xl py-3 items-center"
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: isDark ? '#374151' : '#f3f4f6' }}
             >
-              <Text className="text-gray-500 font-medium">Cancel</Text>
+              <Text style={{ fontWeight: '600', color: isDark ? '#9ca3af' : '#6b7280' }}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSaveEdit}
-              className="flex-1 rounded-xl py-3 items-center"
-              style={{ backgroundColor: accent.primary }}
+              style={{ flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: 'center', backgroundColor: accent.primary }}
             >
-              <Text className="text-white font-semibold">Save</Text>
+              <Text style={{ fontWeight: '600', color: '#ffffff' }}>Save</Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardModal>
 
-      {/* Toast */}
+      {/* ── Toast ────────────────────────────────────────────────────────── */}
       {toastVisible && (
-        <View className="absolute bottom-32 left-0 right-0 items-center z-50" pointerEvents="none">
-          <View className="bg-gray-800 px-6 py-3 rounded-2xl shadow-lg">
-            <Text className="text-white text-sm font-medium">{toastMessage}</Text>
+        <View
+          style={{
+            position: 'absolute', bottom: 120, left: 0, right: 0,
+            alignItems: 'center', zIndex: 50,
+          }}
+          pointerEvents="none"
+        >
+          <View style={{
+            backgroundColor: isDark ? '#1f2937' : '#111827',
+            paddingHorizontal: 20, paddingVertical: 10,
+            borderRadius: 20,
+            flexDirection: 'row', alignItems: 'center', gap: 8,
+          }}>
+            <Ionicons name="checkmark-circle-outline" size={16} color="#4ade80" />
+            <Text style={{ color: '#ffffff', fontSize: 13, fontWeight: '500' }}>
+              {toastMessage}
+            </Text>
           </View>
         </View>
       )}

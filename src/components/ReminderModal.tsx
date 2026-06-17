@@ -1,12 +1,10 @@
 import { useState } from 'react'
 import {
-  View,
-  Text,
-  Modal,
-  TouchableOpacity,
-  Platform,
+  View, Text, Modal,
+  TouchableOpacity, Platform,
 } from 'react-native'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import { Ionicons } from '@expo/vector-icons'
 import { useTheme } from '../context/ThemeContext'
 
 type Props = {
@@ -18,52 +16,36 @@ type Props = {
 const PRESET_OPTIONS = [
   {
     label: 'In 30 minutes',
-    getDate: () => {
-      const d = new Date()
-      d.setMinutes(d.getMinutes() + 30)
-      return d
-    },
+    icon: 'time-outline',
+    getDate: () => { const d = new Date(); d.setMinutes(d.getMinutes() + 30); return d },
   },
   {
     label: 'In 1 hour',
-    getDate: () => {
-      const d = new Date()
-      d.setMinutes(d.getMinutes() + 60)
-      return d
-    },
+    icon: 'time-outline',
+    getDate: () => { const d = new Date(); d.setMinutes(d.getMinutes() + 60); return d },
   },
   {
     label: 'In 2 hours',
-    getDate: () => {
-      const d = new Date()
-      d.setMinutes(d.getMinutes() + 120)
-      return d
-    },
+    icon: 'time-outline',
+    getDate: () => { const d = new Date(); d.setMinutes(d.getMinutes() + 120); return d },
   },
   {
     label: 'Tonight at 8 PM',
-    getDate: () => {
-      const d = new Date()
-      d.setHours(20, 0, 0, 0)
-      return d
-    },
+    icon: 'moon-outline',
+    getDate: () => { const d = new Date(); d.setHours(20, 0, 0, 0); return d },
   },
   {
     label: 'Tomorrow at 9 AM',
-    getDate: () => {
-      const d = new Date()
-      d.setDate(d.getDate() + 1)
-      d.setHours(9, 0, 0, 0)
-      return d
-    },
+    icon: 'sunny-outline',
+    getDate: () => { const d = new Date(); d.setDate(d.getDate() + 1); d.setHours(9, 0, 0, 0); return d },
   },
 ]
 
 export default function ReminderModal({ visible, onClose, onSelectTime }: Props) {
   const { isDark, accent } = useTheme()
   const [customPickerVisible, setCustomPickerVisible] = useState(false)
-  const [customDate, setCustomDate] = useState(new Date())
-  const [androidStep, setAndroidStep] = useState<'date' | 'time' | null>(null)
+  const [customDate, setCustomDate]                   = useState(new Date())
+  const [androidStep, setAndroidStep]                 = useState<'date' | 'time' | null>(null)
 
   const handlePreset = (date: Date) => {
     onClose()
@@ -84,75 +66,128 @@ export default function ReminderModal({ visible, onClose, onSelectTime }: Props)
 
   return (
     <>
-      {/* Main Preset Modal */}
+      {/* ── Preset options modal ─────────────────────────────────────────── */}
       <Modal visible={visible} transparent animationType="fade">
         <TouchableOpacity
-          className="flex-1 bg-black/40 justify-end"
+          style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' }}
           activeOpacity={1}
           onPress={onClose}
         >
-          <View
-            className={`mx-4 mb-10 rounded-3xl overflow-hidden ${isDark ? 'bg-gray-800' : 'bg-white'}`}
-          >
-            <View className={`px-5 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}>
-              <Text className={`text-base font-bold text-center ${isDark ? 'text-white' : 'text-gray-700'}`}>
-                🔔 Set Reminder
+          <View style={{
+            marginHorizontal: 16, marginBottom: 40,
+            borderRadius: 24, overflow: 'hidden',
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          }}>
+            {/* Header */}
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 16,
+              borderBottomWidth: 0.5,
+              borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+              flexDirection: 'row', alignItems: 'center',
+              justifyContent: 'center', gap: 8,
+            }}>
+              <Ionicons name="notifications-outline" size={18} color={isDark ? '#f9fafb' : '#111827'} />
+              <Text style={{
+                fontSize: 15, fontWeight: '700',
+                color: isDark ? '#f9fafb' : '#111827',
+              }}>
+                Set Reminder
               </Text>
             </View>
 
-            {PRESET_OPTIONS.map((option) => (
+            {/* Preset options */}
+            {PRESET_OPTIONS.map((option, index) => (
               <TouchableOpacity
                 key={option.label}
                 onPress={() => handlePreset(option.getDate())}
-                className={`px-5 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-100'}`}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', gap: 14,
+                  paddingHorizontal: 20, paddingVertical: 15,
+                  borderBottomWidth: 0.5,
+                  borderBottomColor: isDark ? '#374151' : '#f3f4f6',
+                }}
               >
-                <Text className={`text-base ${isDark ? 'text-white' : 'text-gray-700'}`}>
+                <View style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  alignItems: 'center', justifyContent: 'center',
+                  backgroundColor: accent.primary + '18',
+                }}>
+                  <Ionicons name={option.icon as any} size={16} color={accent.primary} />
+                </View>
+                <Text style={{
+                  fontSize: 15, fontWeight: '500',
+                  color: isDark ? '#f9fafb' : '#111827',
+                }}>
                   {option.label}
                 </Text>
               </TouchableOpacity>
             ))}
 
-            <TouchableOpacity onPress={handleCustomPress} className="px-5 py-4">
-              <Text className="text-base font-semibold" style={{ color: accent.primary }}>
-                📅 Custom Date & Time...
+            {/* Custom date & time */}
+            <TouchableOpacity
+              onPress={handleCustomPress}
+              style={{
+                flexDirection: 'row', alignItems: 'center', gap: 14,
+                paddingHorizontal: 20, paddingVertical: 15,
+              }}
+            >
+              <View style={{
+                width: 32, height: 32, borderRadius: 8,
+                alignItems: 'center', justifyContent: 'center',
+                backgroundColor: accent.primary + '18',
+              }}>
+                <Ionicons name="calendar-outline" size={16} color={accent.primary} />
+              </View>
+              <Text style={{
+                fontSize: 15, fontWeight: '600',
+                color: accent.primary,
+              }}>
+                Custom Date & Time
               </Text>
             </TouchableOpacity>
           </View>
 
+          {/* Cancel button */}
           <TouchableOpacity
             onPress={onClose}
-            className={`mx-4 mb-6 py-4 rounded-2xl items-center ${isDark ? 'bg-gray-700' : 'bg-white'}`}
+            style={{
+              marginHorizontal: 16, marginBottom: 24, paddingVertical: 16,
+              borderRadius: 16, alignItems: 'center',
+              backgroundColor: isDark ? '#1f2937' : '#ffffff',
+            }}
           >
-            <Text className={`font-semibold ${isDark ? 'text-white' : 'text-gray-700'}`}>
+            <Text style={{
+              fontSize: 15, fontWeight: '600',
+              color: isDark ? '#f9fafb' : '#111827',
+            }}>
               Cancel
             </Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
 
-      {/* iOS Custom Picker */}
+      {/* ── iOS custom date/time picker ──────────────────────────────────── */}
       {Platform.OS === 'ios' && (
         <Modal visible={customPickerVisible} transparent={false} animationType="slide">
-          <View className="flex-1" style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}>
-            <View
-              className="flex-row items-center justify-between px-5 pt-14 pb-4"
-              style={{ borderBottomWidth: 1, borderBottomColor: isDark ? '#374151' : '#e5e7eb' }}
-            >
+          <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : '#f9fafb' }}>
+            <View style={{
+              flexDirection: 'row', alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: 20, paddingTop: 56, paddingBottom: 16,
+              borderBottomWidth: 0.5,
+              borderBottomColor: isDark ? '#374151' : '#e5e7eb',
+            }}>
               <TouchableOpacity onPress={() => setCustomPickerVisible(false)}>
-                <Text className="text-base font-medium" style={{ color: accent.primary }}>
-                  Cancel
-                </Text>
+                <Text style={{ fontSize: 15, fontWeight: '500', color: accent.primary }}>Cancel</Text>
               </TouchableOpacity>
-              <Text className={`text-base font-bold ${isDark ? 'text-white' : 'text-gray-800'}`}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: isDark ? '#f9fafb' : '#111827' }}>
                 Set Reminder
               </Text>
               <TouchableOpacity onPress={handleIOSSave}>
-                <Text className="text-base font-semibold" style={{ color: accent.primary }}>
-                  Save
-                </Text>
+                <Text style={{ fontSize: 15, fontWeight: '700', color: accent.primary }}>Save</Text>
               </TouchableOpacity>
             </View>
-            <View className="flex-1 justify-center items-center">
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
               <DateTimePicker
                 value={customDate}
                 mode="datetime"
@@ -167,7 +202,7 @@ export default function ReminderModal({ visible, onClose, onSelectTime }: Props)
         </Modal>
       )}
 
-      {/* Android Date Step */}
+      {/* ── Android date step ────────────────────────────────────────────── */}
       {Platform.OS === 'android' && androidStep === 'date' && (
         <DateTimePicker
           value={customDate}
@@ -187,7 +222,7 @@ export default function ReminderModal({ visible, onClose, onSelectTime }: Props)
         />
       )}
 
-      {/* Android Time Step */}
+      {/* ── Android time step ────────────────────────────────────────────── */}
       {Platform.OS === 'android' && androidStep === 'time' && (
         <DateTimePicker
           value={customDate}

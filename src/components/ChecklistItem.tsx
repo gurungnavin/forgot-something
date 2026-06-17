@@ -1,10 +1,9 @@
-import { View, Text, TouchableOpacity, Animated } from 'react-native'
+import { View, Text, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 // @ts-ignore
 import Swipeable from 'react-native-gesture-handler/Swipeable'
 import { Item } from '../types'
 import { useTheme } from '../context/ThemeContext'
-import { useRef } from 'react'
 
 type Props = {
   item: Item
@@ -41,80 +40,116 @@ export default function ChecklistItem({
   return (
     <Swipeable
       ref={swipeableRef}
+      overshootLeft={false}
+      overshootRight={false}
+
+      // ── Swipe right → Edit ──────────────────────────────────────────────
       renderLeftActions={() => (
         <TouchableOpacity
           onPress={() => onEdit(item)}
-          className="bg-blue-400 justify-center items-center rounded-2xl mb-3 px-5"
+          style={{
+            backgroundColor: '#3b82f6',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 14,
+            marginBottom: 10,
+            paddingHorizontal: 20,
+            gap: 4,
+          }}
         >
-          <Text className="text-white text-xl">✏️</Text>
-          <Text className="text-white text-xs font-medium mt-1">Edit</Text>
+          <Ionicons name="pencil-outline" size={20} color="#ffffff" />
+          <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '600' }}>Edit</Text>
         </TouchableOpacity>
       )}
+
+      // ── Swipe left → Delete ─────────────────────────────────────────────
       renderRightActions={() => (
         <TouchableOpacity
           onPress={() => onDelete(item.id)}
-          className="bg-rose-400 justify-center items-center rounded-2xl mb-3 px-5"
+          style={{
+            backgroundColor: '#f43f5e',
+            justifyContent: 'center',
+            alignItems: 'center',
+            borderRadius: 14,
+            marginBottom: 10,
+            paddingHorizontal: 20,
+            gap: 4,
+          }}
         >
-          <Text className="text-white text-xl">🗑️</Text>
-          <Text className="text-white text-xs font-medium mt-1">Delete</Text>
+          <Ionicons name="trash-outline" size={20} color="#ffffff" />
+          <Text style={{ color: '#ffffff', fontSize: 11, fontWeight: '600' }}>Delete</Text>
         </TouchableOpacity>
       )}
-      overshootLeft={false}
-      overshootRight={false}
     >
       <TouchableOpacity
         onPress={() => onToggle(item.id)}
-        activeOpacity={0.8}
-        className={`flex-row items-center justify-between rounded-2xl px-4 py-4 mb-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}
+        activeOpacity={0.75}
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          borderRadius: 14,
+          paddingHorizontal: 14,
+          paddingVertical: 13,
+          marginBottom: 10,
+          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          borderWidth: isDark ? 0 : 0.5,
+          borderColor: '#f3f4f6',
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 1 },
+          shadowOpacity: isDark ? 0.15 : 0.04,
+          shadowRadius: 4,
+          elevation: 1,
+        }}
       >
-        {/* Number Badge */}
-        <View
-          className="w-7 h-7 rounded-full items-center justify-center mr-3"
-          style={{ backgroundColor: isDark ? '#1f2937' : accent.light }}
-        >
-          <Text className="text-xs font-bold" style={{ color: accent.primary }}>
-            {index + 1}
-          </Text>
-        </View>
-
         {/* Checkbox */}
-        <View
-          className="w-6 h-6 rounded-full border-2 mr-3 items-center justify-center"
+        <TouchableOpacity
+          onPress={() => onToggle(item.id)}
           style={{
+            width: 24, height: 24, borderRadius: 12,
+            borderWidth: 2, marginRight: 12,
+            alignItems: 'center', justifyContent: 'center',
             backgroundColor: item.checked ? accent.primary : 'transparent',
-            borderColor: item.checked ? accent.primary : isDark ? '#6b7280' : '#d1d5db',
+            borderColor: item.checked ? accent.primary : isDark ? '#4b5563' : '#d1d5db',
           }}
+          hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
         >
           {item.checked && (
-            <Text className="text-white text-xs font-bold">✓</Text>
+            <Ionicons name="checkmark" size={14} color="#ffffff" />
           )}
-        </View>
+        </TouchableOpacity>
 
-        {/* Label + Timestamp */}
-        <View className="flex-1">
-          <Text
-            className={`text-base ${item.checked ? 'line-through text-gray-400' : ''}`}
-            style={{ color: item.checked ? '#9ca3af' : isDark ? '#f9fafb' : '#374151' }}
-          >
+        {/* Label + timestamp */}
+        <View style={{ flex: 1 }}>
+          <Text style={{
+            fontSize: 15,
+            fontWeight: '500',
+            textDecorationLine: item.checked ? 'line-through' : 'none',
+            color: item.checked
+              ? isDark ? '#4b5563' : '#9ca3af'
+              : isDark ? '#f9fafb' : '#111827',
+          }}>
             {item.label}
           </Text>
           {item.createdAt && (
-            <Text className={`text-xs mt-0.5 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-              🕐 {formatTime(item.createdAt)}
-            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 3 }}>
+              <Ionicons name="time-outline" size={11} color={isDark ? '#4b5563' : '#d1d5db'} />
+              <Text style={{ fontSize: 11, color: isDark ? '#4b5563' : '#d1d5db' }}>
+                {formatTime(item.createdAt)}
+              </Text>
+            </View>
           )}
         </View>
 
         {/* Three dot menu */}
         <TouchableOpacity
           onPress={() => onMenuPress(item)}
-          className="px-2 py-1"
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          style={{ paddingLeft: 8 }}
         >
           <Ionicons
             name="ellipsis-vertical"
             size={16}
-            color={isDark ? '#9ca3af' : '#6b7280'}
+            color={isDark ? '#4b5563' : '#d1d5db'}
           />
         </TouchableOpacity>
       </TouchableOpacity>
