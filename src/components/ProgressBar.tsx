@@ -40,13 +40,13 @@ export default function ProgressBar({ progress, showLabel = false }: Props) {
 
       {/* Track */}
       <View style={{
-        height: 6, borderRadius: 3,
+        height: 8, borderRadius: 4,
         backgroundColor: trackColor,
         overflow: 'hidden',
       }}>
         {/* Fill */}
         <View style={{
-          height: 6, borderRadius: 3,
+          height: 8, borderRadius: 4,
           width: `${percentage}%`,
           backgroundColor: activeColor,
         }} />

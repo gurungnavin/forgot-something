@@ -20,6 +20,7 @@ import uuid from "react-native-uuid";
 import { List, CategoryKey, RootStackParamList } from "../types";
 import { addList } from "../storage/storage";
 import { useLists } from "../hooks/useLists";
+import ListCard from "../components/ListCard";
 import KeyboardModal from "../components/KeyboardModal";
 import ReminderModal from "../components/ReminderModal";
 import { useTheme } from "../context/ThemeContext";
@@ -30,6 +31,7 @@ import {
   scheduleReminder,
   cancelReminder,
 } from "../utils/notifications";
+import { t } from "../i18n";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function getRemainingTime(targetDate: string) {
@@ -46,17 +48,113 @@ function getRemainingTime(targetDate: string) {
   return `${seconds}s`;
 }
 
-// ── Card accent colors per index ───────────────────────────────────────────────
-const CARD_COLORS = [
-  { bg: "#fff1f2", icon: "#fb7185", dark_bg: "#2d1417", dark_icon: "#fb7185" },
-  { bg: "#fff7ed", icon: "#f97316", dark_bg: "#2d1b0e", dark_icon: "#f97316" },
-  { bg: "#fefce8", icon: "#eab308", dark_bg: "#2d2608", dark_icon: "#eab308" },
-  { bg: "#f0fdf4", icon: "#22c55e", dark_bg: "#0d2818", dark_icon: "#22c55e" },
-  { bg: "#eff6ff", icon: "#3b82f6", dark_bg: "#0d1f3c", dark_icon: "#60a5fa" },
-  { bg: "#faf5ff", icon: "#a855f7", dark_bg: "#1e0d33", dark_icon: "#c084fc" },
-];
+// ── Ad Card ────────────────────────────────────────────────────────────────────
+const AD_CARD_ID = "__ad__";
 
-// ── Category Picker (for modals) ───────────────────────────────────────────────
+const NativeAdCard = ({ isDark }: { isDark: boolean }) => (
+  <View style={{
+    marginHorizontal: 20, marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: isDark ? "#1f2937" : "#ffffff",
+    borderWidth: 0.5,
+    borderColor: isDark ? "#374151" : "#e5e7eb",
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  }}>
+    {/* Icon placeholder */}
+    <View style={{
+      width: 40, height: 40, borderRadius: 10,
+      backgroundColor: isDark ? "#374151" : "#f3f4f6",
+      alignItems: "center", justifyContent: "center",
+    }}>
+      <Ionicons name="bag-outline" size={20} color={isDark ? "#9ca3af" : "#6b7280"} />
+    </View>
+
+    <View style={{ flex: 1 }}>
+      <Text style={{
+        fontSize: 14, fontWeight: "600",
+        color: isDark ? "#f9fafb" : "#111827",
+      }}>
+        Travel smarter, pack lighter
+      </Text>
+      <Text style={{
+        fontSize: 12, color: isDark ? "#6b7280" : "#9ca3af", marginTop: 2,
+      }}>
+        Ad · Tap to remove ads with Pro
+      </Text>
+    </View>
+
+    <View style={{ alignItems: "flex-end", gap: 4 }}>
+      <Text style={{
+        fontSize: 9, fontWeight: "700", letterSpacing: 0.5,
+        color: isDark ? "#6b7280" : "#9ca3af", textTransform: "uppercase",
+      }}>
+        Sponsored
+      </Text>
+      <TouchableOpacity
+        style={{
+          paddingHorizontal: 10, paddingVertical: 5,
+          borderRadius: 8, borderWidth: 1, borderColor: "#EE5D74",
+        }}
+        activeOpacity={0.7}
+      >
+        <Text style={{ fontSize: 12, fontWeight: "600", color: "#EE5D74" }}>
+          Remove
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+);
+
+// ── Pro Banner Card ────────────────────────────────────────────────────────────
+const PRO_CARD_ID = "__pro__";
+
+const ProBannerCard = ({ accent, onUpgrade }: { accent: any; onUpgrade: () => void }) => (
+  <View style={{
+    marginHorizontal: 20, marginBottom: 12,
+    borderRadius: 20,
+    backgroundColor: accent.primary,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    overflow: "hidden",
+  }}>
+    {/* Crown icon tile */}
+    <View style={{
+      width: 44, height: 44, borderRadius: 12,
+      backgroundColor: "rgba(255,255,255,0.2)",
+      alignItems: "center", justifyContent: "center",
+    }}>
+      <Ionicons name="diamond-outline" size={22} color="#ffffff" />
+    </View>
+
+    <View style={{ flex: 1 }}>
+      <Text style={{ fontSize: 15, fontWeight: "700", color: "#ffffff" }}>
+        Go Quikli Pro
+      </Text>
+      <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>
+        Unlimited lists, no ads, smart reminders
+      </Text>
+    </View>
+
+    <TouchableOpacity
+      onPress={onUpgrade}
+      style={{
+        width: 36, height: 36, borderRadius: 18,
+        backgroundColor: "rgba(255,255,255,0.25)",
+        alignItems: "center", justifyContent: "center",
+      }}
+      activeOpacity={0.7}
+    >
+      <Ionicons name="add" size={22} color="#ffffff" />
+    </TouchableOpacity>
+  </View>
+);
+
+// ── Category Picker ────────────────────────────────────────────────────────────
 const CategoryPicker = ({
   selected,
   onSelect,
@@ -80,7 +178,10 @@ const CategoryPicker = ({
 
   return (
     <View>
-      <Text className="text-xs font-semibold uppercase tracking-widest mb-3 text-gray-400">
+      <Text style={{
+        fontSize: 11, fontWeight: "600", textTransform: "uppercase",
+        letterSpacing: 1, marginBottom: 8, color: "#9ca3af",
+      }}>
         Category
       </Text>
       <ScrollView
@@ -108,10 +209,8 @@ const CategoryPicker = ({
                 paddingVertical: 8,
                 borderRadius: 20,
                 backgroundColor: isSelected
-                  ? accent.primary
-                  : isDark
-                    ? "#374151"
-                    : "#f3f4f6",
+                  ? cat.color
+                  : isDark ? "#374151" : "#f3f4f6",
                 borderWidth: isSelected ? 0 : 1,
                 borderColor: isDark ? "#4b5563" : "#e5e7eb",
               }}
@@ -121,17 +220,10 @@ const CategoryPicker = ({
                 size={14}
                 color={isSelected ? "#ffffff" : isDark ? "#d1d5db" : "#4b5563"}
               />
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "500",
-                  color: isSelected
-                    ? "#ffffff"
-                    : isDark
-                      ? "#d1d5db"
-                      : "#4b5563",
-                }}
-              >
+              <Text style={{
+                fontSize: 13, fontWeight: "500",
+                color: isSelected ? "#ffffff" : isDark ? "#d1d5db" : "#4b5563",
+              }}>
                 {cat.label}
               </Text>
             </TouchableOpacity>
@@ -142,193 +234,40 @@ const CategoryPicker = ({
   );
 };
 
-// ── List Card ──────────────────────────────────────────────────────────────────
-const ListItem = ({
-  list,
-  index,
-  onPress,
-  onMenuPress,
-  isDark,
-  accent,
-  isLast,
-}: {
-  list: List;
-  index: number;
-  onPress: () => void;
-  onMenuPress: () => void;
-  isDark: boolean;
-  accent: any;
-  isLast: boolean;
-}) => {
-  const totalItems = list.items.length;
-  const checkedItems = list.items.filter((i) => i.checked).length;
-  const percentage = Math.round(
-    (totalItems > 0 ? checkedItems / totalItems : 0) * 100,
-  );
-  const isComplete = totalItems > 0 && checkedItems === totalItems;
-  const color = CARD_COLORS[index % CARD_COLORS.length];
-  const category = CATEGORIES.find((c) => c.key === list.category);
-  const categoryIcon = (category?.icon ?? "list-outline") as any;
-
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      style={{
-        flexDirection: "row",
-        alignItems: "center",
-        paddingHorizontal: 14,
-        paddingVertical: 12,
-        borderBottomWidth: isLast ? 0 : 0.5,
-        borderBottomColor: isDark ? "rgba(255,255,255,0.06)" : "#f3f4f6",
-        gap: 12,
-      }}
-    >
-      {/* Icon */}
-      <View
-        style={{
-          width: 38,
-          height: 38,
-          borderRadius: 10,
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: isDark ? color.dark_bg : color.bg,
-          flexShrink: 0,
-        }}
-      >
-        <Ionicons
-          name={categoryIcon}
-          size={17}
-          color={isDark ? color.dark_icon : color.icon}
-        />
-      </View>
-
-      {/* Title + Subtitle */}
-      <View style={{ flex: 1, minWidth: 0 }}>
-        <Text
-          numberOfLines={1}
-          style={{
-            fontSize: 14,
-            fontWeight: "600",
-            color: isDark ? "#f9fafb" : "#111827",
-            marginBottom: 3,
-          }}
-        >
-          {list.name}
-        </Text>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-          {list.reminder && !isComplete && (
-            <Ionicons
-              name="notifications"
-              size={11}
-              color={isDark ? color.dark_icon : color.icon}
-            />
-          )}
-          <Text
-            style={{
-              fontSize: 12,
-              color: isComplete ? "#22c55e" : isDark ? "#6b7280" : "#9ca3af",
-            }}
-          >
-            {totalItems === 0
-              ? "No items yet"
-              : isComplete
-                ? "All done!"
-                : `${checkedItems} of ${totalItems} checked`}
-          </Text>
-        </View>
-      </View>
-
-      {/* Right — % + progress + menu */}
-      <View style={{ alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-        <Text
-          style={{
-            fontSize: 12,
-            fontWeight: "700",
-            color: isComplete
-              ? "#22c55e"
-              : isDark
-                ? color.dark_icon
-                : color.icon,
-          }}
-        >
-          {percentage}%
-        </Text>
-        <View
-          style={{
-            width: 48,
-            height: 3,
-            borderRadius: 2,
-            backgroundColor: isDark ? "#374151" : "#f3f4f6",
-            overflow: "hidden",
-          }}
-        >
-          <View
-            style={{
-              width: `${percentage}%`,
-              height: 3,
-              borderRadius: 2,
-              backgroundColor: isComplete
-                ? "#22c55e"
-                : isDark
-                  ? color.dark_icon
-                  : color.icon,
-            }}
-          />
-        </View>
-      </View>
-
-      {/* Menu */}
-      <TouchableOpacity
-        onPress={onMenuPress}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons
-          name="ellipsis-vertical"
-          size={16}
-          color={isDark ? "#4b5563" : "#d1d5db"}
-        />
-      </TouchableOpacity>
-    </TouchableOpacity>
-  );
-};
-
 // ── HomeScreen ─────────────────────────────────────────────────────────────────
 export default function HomeScreen() {
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { isDark, accent } = useTheme();
-  const { lists, refreshLists, editList, removeList } = useLists();
+  const { lists, isLoading, refreshLists, editList, removeList } = useLists();
 
   // Filter
   const [activeFilter, setActiveFilter] = useState<CategoryKey | "all">("all");
 
+  // Smart banner
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+
   // Create modal
-  const [modalVisible, setModalVisible] = useState(false);
-  const [newListName, setNewListName] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(
-    null,
-  );
+  const [modalVisible, setModalVisible]       = useState(false);
+  const [newListName, setNewListName]          = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<CategoryKey | null>(null);
 
   // Edit modal
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editName, setEditName] = useState("");
-  const [editCategory, setEditCategory] = useState<CategoryKey | null>(null);
+  const [editName, setEditName]                 = useState("");
+  const [editCategory, setEditCategory]         = useState<CategoryKey | null>(null);
 
   // Menu
   const [menuVisible, setMenuVisible] = useState(false);
-  const [menuList, setMenuList] = useState<List | null>(null);
+  const [menuList, setMenuList]       = useState<List | null>(null);
 
   // Reminder
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
-  const [reminderCountdown, setReminderCountdown] = useState<string | null>(
-    null,
-  );
+  const [reminderCountdown, setReminderCountdown]       = useState<string | null>(null);
 
-  const createScrollRef = useRef<ScrollView>(null);
+  const createScrollRef    = useRef<ScrollView>(null);
   const createItemPositions = useRef<{ [key: string]: number }>({});
-  const editScrollRef = useRef<ScrollView>(null);
-  const editItemPositions = useRef<{ [key: string]: number }>({});
+  const editScrollRef      = useRef<ScrollView>(null);
+  const editItemPositions  = useRef<{ [key: string]: number }>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -339,36 +278,67 @@ export default function HomeScreen() {
   useEffect(() => {
     let interval: number | null = null;
     if (menuVisible && menuList?.reminder?.time) {
-      const update = () =>
-        setReminderCountdown(getRemainingTime(menuList.reminder!.time!));
+      const update = () => setReminderCountdown(getRemainingTime(menuList.reminder!.time!));
       update();
       interval = setInterval(update, 1000);
     } else {
       setReminderCountdown(null);
     }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
+    return () => { if (interval) clearInterval(interval); };
   }, [menuVisible, menuList?.reminder?.time]);
 
-  // ── Filtered lists ────────────────────────────────────────────────────────
-  const filteredLists =
-    activeFilter === "all"
-      ? lists
-      : lists.filter((l) => l.category === activeFilter);
+  // ── Derived ───────────────────────────────────────────────────────────────
+  const filteredLists = activeFilter === "all"
+    ? lists
+    : lists.filter((l) => l.category === activeFilter);
 
-  // ── Categories that have lists ────────────────────────────────────────────
   const usedCategories = CATEGORIES.filter((cat) =>
     lists.some((l) => l.category === cat.key),
   );
 
-  // ── Create ─────────────────────────────────────────────────────────────────
+  // Streak — count consecutive days with at least one completed list
+  const streak = (() => {
+    const completedDates = lists
+      .filter((l) => l.items.length > 0 && l.items.every((i) => i.checked))
+      .map((l) => new Date(l.createdAt).toDateString());
+    const unique = [...new Set(completedDates)];
+    let count = 0;
+    const today = new Date();
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      if (unique.includes(d.toDateString())) count++;
+      else break;
+    }
+    return count;
+  })();
+
+  // Show smart banner if there are incomplete lists with reminders
+  const hasUpcomingReminder = lists.some(
+    (l) => l.reminder?.time && !l.items.every((i) => i.checked),
+  );
+  const showBanner = hasUpcomingReminder && !bannerDismissed;
+
+  // Build list data — inject ad after index 1, append Pro card at end
+  const listData = (() => {
+    if (filteredLists.length === 0) return [];
+    const items: any[] = [...filteredLists];
+    // Inject ad card after 2nd real item (index 1)
+    if (items.length >= 2) {
+      items.splice(2, 0, { id: AD_CARD_ID });
+    }
+    // Append Pro banner at end
+    items.push({ id: PRO_CARD_ID });
+    return items;
+  })();
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleCreateList = () => {
     if (lists.length >= MAX_LISTS) {
       Toast.show({
         type: "error",
         text1: "List Limit Reached",
-        text2: "Watch an ad to unlock 1 list for 2 weeks or upgrade to Pro 🚀",
+        text2: "Watch an ad to unlock 1 list for 2 weeks or upgrade to Pro",
         visibilityTime: 5000,
       });
       return;
@@ -451,7 +421,7 @@ export default function HomeScreen() {
     }
     await cancelReminder(menuList.id);
     await scheduleReminder(
-      `${menuList.name}`,
+      menuList.name,
       "Don't forget to check your list before you go!",
       date,
       menuList.id,
@@ -476,77 +446,97 @@ export default function HomeScreen() {
   useEffect(() => {
     const pulse = () => {
       Animated.sequence([
-        Animated.spring(dotScale, {
-          toValue: 1.4,
-          friction: 3,
-          tension: 100,
-          useNativeDriver: true,
-        }),
-        Animated.spring(dotScale, {
-          toValue: 1,
-          friction: 3,
-          tension: 100,
-          useNativeDriver: true,
-        }),
+        Animated.spring(dotScale, { toValue: 1.4, friction: 3, tension: 100, useNativeDriver: true }),
+        Animated.spring(dotScale, { toValue: 1,   friction: 3, tension: 100, useNativeDriver: true }),
       ]).start(() => setTimeout(pulse, 3000));
     };
     pulse();
   }, []);
 
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: isDark ? "#111827" : accent.light,
-      }}
-    >
+    <View style={{ flex: 1, backgroundColor: isDark ? "#111827" : accent.light }}>
       <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
 
       <FlatList
-        data={filteredLists}
+        data={listData}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 140, paddingTop: 56 }}
         ListHeaderComponent={
           <View style={{ paddingHorizontal: 20 }}>
+
             {/* Header */}
-            <View
-              style={{ alignItems: "center", marginBottom: 20, marginTop: 16 }}
-            >
-              <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
-                <Text
-                  style={{
-                    fontSize: 32,
-                    fontWeight: "800",
+            <View style={{ marginBottom: 20, marginTop: 16 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                {/* Wordmark */}
+                <View style={{ flexDirection: "row", alignItems: "flex-end" }}>
+                  <Text style={{
+                    fontSize: 32, fontWeight: "800",
                     color: isDark ? "#ffffff" : "#111827",
                     letterSpacing: -0.5,
-                  }}
-                >
-                  Quikli
-                </Text>
-                <Animated.Text
-                  style={{
-                    fontSize: 32,
-                    fontWeight: "800",
+                  }}>
+                    Quikli
+                  </Text>
+                  <Animated.Text style={{
+                    fontSize: 32, fontWeight: "800",
                     color: accent.primary,
                     transform: [{ scale: dotScale }],
                     marginBottom: 2,
-                  }}
-                >
-                  .
-                </Animated.Text>
+                  }}>
+                    .
+                  </Animated.Text>
+                </View>
+
+                {/* Streak counter */}
+                {streak > 0 && (
+                  <View style={{
+                    flexDirection: "row", alignItems: "center", gap: 4,
+                    backgroundColor: isDark ? "#1f2937" : "#ffffff",
+                    paddingHorizontal: 10, paddingVertical: 6,
+                    borderRadius: 20,
+                    borderWidth: 0.5,
+                    borderColor: isDark ? "#374151" : "#e5e7eb",
+                  }}>
+                    <Text style={{ fontSize: 14 }}>⚡</Text>
+                    <Text style={{
+                      fontSize: 13, fontWeight: "700",
+                      color: isDark ? "#f9fafb" : "#111827",
+                    }}>
+                      {streak}-day streak
+                    </Text>
+                  </View>
+                )}
               </View>
-              <Text
-                style={{
-                  fontSize: 13,
-                  color: isDark ? "#6b7280" : "#9ca3af",
-                  marginTop: 2,
-                }}
-              >
+
+              <Text style={{
+                fontSize: 13, color: isDark ? "#6b7280" : "#9ca3af", marginTop: 4,
+              }}>
                 {lists.length}/{MAX_LISTS} lists used
               </Text>
             </View>
-            {/* Category Filter Tabs — only show if lists exist */}
+
+            {/* Smart Banner */}
+            {showBanner && (
+              <View style={{
+                flexDirection: "row", alignItems: "center",
+                backgroundColor: accent.primary,
+                borderRadius: 14, padding: 14, marginBottom: 16, gap: 10,
+              }}>
+                <Ionicons name="time-outline" size={18} color="#ffffff" />
+                <Text style={{ flex: 1, fontSize: 13, fontWeight: "600", color: "#ffffff" }}>
+                  Heading out soon? You have a reminder coming up.
+                </Text>
+                <TouchableOpacity
+                  onPress={() => setBannerDismissed(true)}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close" size={18} color="#ffffff" />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Category Filter Tabs */}
             {lists.length > 0 && (
               <ScrollView
                 horizontal
@@ -559,18 +549,11 @@ export default function HomeScreen() {
                   onPress={() => setActiveFilter("all")}
                   activeOpacity={0.7}
                   style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 6,
-                    paddingHorizontal: 14,
-                    paddingVertical: 8,
-                    borderRadius: 20,
-                    backgroundColor:
-                      activeFilter === "all"
-                        ? accent.primary
-                        : isDark
-                          ? "#1f2937"
-                          : "#ffffff",
+                    flexDirection: "row", alignItems: "center", gap: 6,
+                    paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
+                    backgroundColor: activeFilter === "all"
+                      ? accent.primary
+                      : isDark ? "#1f2937" : "#ffffff",
                     borderWidth: activeFilter === "all" ? 0 : 0.5,
                     borderColor: isDark ? "#374151" : "#e5e7eb",
                   }}
@@ -578,26 +561,12 @@ export default function HomeScreen() {
                   <Ionicons
                     name="apps-outline"
                     size={14}
-                    color={
-                      activeFilter === "all"
-                        ? "#ffffff"
-                        : isDark
-                          ? "#9ca3af"
-                          : "#6b7280"
-                    }
+                    color={activeFilter === "all" ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280"}
                   />
-                  <Text
-                    style={{
-                      fontSize: 13,
-                      fontWeight: "600",
-                      color:
-                        activeFilter === "all"
-                          ? "#ffffff"
-                          : isDark
-                            ? "#9ca3af"
-                            : "#6b7280",
-                    }}
-                  >
+                  <Text style={{
+                    fontSize: 13, fontWeight: "600",
+                    color: activeFilter === "all" ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280",
+                  }}>
                     All
                   </Text>
                 </TouchableOpacity>
@@ -611,17 +580,11 @@ export default function HomeScreen() {
                       onPress={() => setActiveFilter(cat.key)}
                       activeOpacity={0.7}
                       style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        gap: 6,
-                        paddingHorizontal: 14,
-                        paddingVertical: 8,
-                        borderRadius: 20,
+                        flexDirection: "row", alignItems: "center", gap: 6,
+                        paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20,
                         backgroundColor: isActive
-                          ? accent.primary
-                          : isDark
-                            ? "#1f2937"
-                            : "#ffffff",
+                          ? cat.color
+                          : isDark ? "#1f2937" : "#ffffff",
                         borderWidth: isActive ? 0 : 0.5,
                         borderColor: isDark ? "#374151" : "#e5e7eb",
                       }}
@@ -629,21 +592,12 @@ export default function HomeScreen() {
                       <Ionicons
                         name={cat.icon as any}
                         size={14}
-                        color={
-                          isActive ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280"
-                        }
+                        color={isActive ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280"}
                       />
-                      <Text
-                        style={{
-                          fontSize: 13,
-                          fontWeight: "600",
-                          color: isActive
-                            ? "#ffffff"
-                            : isDark
-                              ? "#9ca3af"
-                              : "#6b7280",
-                        }}
-                      >
+                      <Text style={{
+                        fontSize: 13, fontWeight: "600",
+                        color: isActive ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280",
+                      }}>
                         {cat.label}
                       </Text>
                     </TouchableOpacity>
@@ -654,126 +608,82 @@ export default function HomeScreen() {
           </View>
         }
         ListEmptyComponent={
-          lists.length === 0 ? (
-            <View
-              style={{
-                flex: 1,
-                alignItems: "center",
-                justifyContent: "center",
-                paddingTop: 60,
-                paddingBottom: 80,
-              }}
-            >
+          isLoading ? null : lists.length === 0 ? (
+            <View style={{
+              flex: 1, alignItems: "center", justifyContent: "center",
+              paddingTop: 60, paddingBottom: 80,
+            }}>
               <LottieView
                 source={require("../../assets/lottie/bunny.json")}
-                autoPlay
-                loop
+                autoPlay loop
                 style={{ width: 280, height: 280 }}
               />
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "700",
-                  color: isDark ? "#fda4af" : accent.text,
-                  textAlign: "center",
-                  marginTop: 8,
-                }}
-              >
+              <Text style={{
+                fontSize: 20, fontWeight: "700",
+                color: isDark ? "#fda4af" : accent.text,
+                textAlign: "center", marginTop: 8,
+              }}>
                 Nothing here yet!
               </Text>
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDark ? "#6b7280" : "#9ca3af",
-                  textAlign: "center",
-                  marginTop: 6,
-                }}
-              >
+              <Text style={{
+                fontSize: 14, color: isDark ? "#6b7280" : "#9ca3af",
+                textAlign: "center", marginTop: 6,
+              }}>
                 Tap + to create your first checklist
               </Text>
             </View>
           ) : (
-            <View
-              style={{
-                alignItems: "center",
-                paddingTop: 40,
-                paddingBottom: 40,
-                paddingHorizontal: 20,
-              }}
-            >
-              <Ionicons
-                name="filter-outline"
-                size={32}
-                color={isDark ? "#374151" : "#e5e7eb"}
-              />
-              <Text
-                style={{
-                  fontSize: 14,
-                  color: isDark ? "#6b7280" : "#9ca3af",
-                  marginTop: 8,
-                  textAlign: "center",
-                }}
-              >
+            <View style={{
+              alignItems: "center", paddingTop: 40, paddingBottom: 40, paddingHorizontal: 20,
+            }}>
+              <Ionicons name="filter-outline" size={32} color={isDark ? "#374151" : "#e5e7eb"} />
+              <Text style={{
+                fontSize: 14, color: isDark ? "#6b7280" : "#9ca3af",
+                marginTop: 8, textAlign: "center",
+              }}>
                 No lists in this category
               </Text>
             </View>
           )
         }
-        renderItem={({ item, index }) => (
-          <View
-            style={{
-              paddingHorizontal: 20,
-              marginTop: item.reminder && !isComplete(item) ? 10 : 0,
-            }}
-          >
-            {/* Group card — wrap consecutive items in white card */}
-            <View
-              style={{
-                backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                borderRadius: 16,
-                marginBottom: 10,
-                overflow: "hidden",
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: isDark ? 0.2 : 0.05,
-                shadowRadius: 6,
-                elevation: 1,
-              }}
-            >
-              <ListItem
-                list={item}
-                index={index}
-                onPress={() =>
-                  navigation.navigate("ListDetail", { listId: item.id })
-                }
-                onMenuPress={() => handleOpenMenu(item)}
-                isDark={isDark}
+        renderItem={({ item }) => {
+          // Injected ad card
+          if (item.id === AD_CARD_ID) {
+            return <NativeAdCard isDark={isDark} />;
+          }
+          // Pro banner card
+          if (item.id === PRO_CARD_ID) {
+            return (
+              <ProBannerCard
                 accent={accent}
-                isLast={true}
+                onUpgrade={() => navigation.navigate("Pro")}
+              />
+            );
+          }
+          // Normal list card
+          return (
+            <View style={{ paddingHorizontal: 20 }}>
+              <ListCard
+                list={item}
+                onPress={() => navigation.navigate("ListDetail", { listId: item.id })}
+                onMenuPress={() => handleOpenMenu(item)}
               />
             </View>
-          </View>
-        )}
+          );
+        }}
       />
 
       {/* FAB */}
       <TouchableOpacity
         onPress={handleCreateList}
         style={{
-          position: "absolute",
-          bottom: 100,
-          right: 24,
-          width: 56,
-          height: 56,
-          borderRadius: 28,
+          position: "absolute", bottom: 100, right: 24,
+          width: 56, height: 56, borderRadius: 28,
           backgroundColor: accent.primary,
-          alignItems: "center",
-          justifyContent: "center",
+          alignItems: "center", justifyContent: "center",
           shadowColor: accent.primary,
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.4,
-          shadowRadius: 8,
-          elevation: 6,
+          shadowOpacity: 0.4, shadowRadius: 8, elevation: 6,
         }}
         activeOpacity={0.8}
       >
@@ -783,39 +693,24 @@ export default function HomeScreen() {
       {/* Context Menu */}
       <Modal visible={menuVisible} transparent animationType="fade">
         <TouchableOpacity
-          style={{
-            flex: 1,
-            backgroundColor: "rgba(0,0,0,0.4)",
-            justifyContent: "flex-end",
-          }}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" }}
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View
-            style={{
-              marginHorizontal: 16,
-              marginBottom: 40,
-              borderRadius: 24,
-              overflow: "hidden",
-              backgroundColor: isDark ? "#1f2937" : "#ffffff",
-            }}
-          >
-            <View
-              style={{
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                borderBottomWidth: 0.5,
-                borderBottomColor: isDark ? "#374151" : "#f3f4f6",
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 13,
-                  fontWeight: "600",
-                  textAlign: "center",
-                  color: isDark ? "#9ca3af" : "#6b7280",
-                }}
-              >
+          <View style={{
+            marginHorizontal: 16, marginBottom: 40,
+            borderRadius: 24, overflow: "hidden",
+            backgroundColor: isDark ? "#1f2937" : "#ffffff",
+          }}>
+            <View style={{
+              paddingHorizontal: 20, paddingVertical: 16,
+              borderBottomWidth: 0.5,
+              borderBottomColor: isDark ? "#374151" : "#f3f4f6",
+            }}>
+              <Text style={{
+                fontSize: 13, fontWeight: "600", textAlign: "center",
+                color: isDark ? "#9ca3af" : "#6b7280",
+              }}>
                 {menuList?.name}
               </Text>
             </View>
@@ -823,81 +718,43 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={handleEditPress}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 20,
-                paddingVertical: 16,
+                flexDirection: "row", alignItems: "center",
+                paddingHorizontal: 20, paddingVertical: 16,
                 borderBottomWidth: 0.5,
                 borderBottomColor: isDark ? "#374151" : "#f3f4f6",
                 gap: 14,
               }}
             >
-              <Ionicons
-                name="pencil-outline"
-                size={20}
-                color={isDark ? "#f9fafb" : "#111827"}
-              />
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "500",
-                  color: isDark ? "#f9fafb" : "#111827",
-                }}
-              >
+              <Ionicons name="pencil-outline" size={20} color={isDark ? "#f9fafb" : "#111827"} />
+              <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? "#f9fafb" : "#111827" }}>
                 Edit List
               </Text>
             </TouchableOpacity>
 
             {menuList && !isComplete(menuList) && (
               <TouchableOpacity
-                onPress={() => {
-                  setMenuVisible(false);
-                  setReminderModalVisible(true);
-                }}
+                onPress={() => { setMenuVisible(false); setReminderModalVisible(true); }}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingHorizontal: 20,
-                  paddingVertical: 16,
+                  flexDirection: "row", alignItems: "center",
+                  paddingHorizontal: 20, paddingVertical: 16,
                   borderBottomWidth: 0.5,
                   borderBottomColor: isDark ? "#374151" : "#f3f4f6",
                   gap: 14,
                 }}
               >
-                <Ionicons
-                  name="notifications-outline"
-                  size={20}
-                  color={isDark ? "#f9fafb" : "#111827"}
-                />
+                <Ionicons name="notifications-outline" size={20} color={isDark ? "#f9fafb" : "#111827"} />
                 <View style={{ flex: 1 }}>
-                  <Text
-                    style={{
-                      fontSize: 15,
-                      fontWeight: "500",
-                      color: isDark ? "#f9fafb" : "#111827",
-                    }}
-                  >
+                  <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? "#f9fafb" : "#111827" }}>
                     Set Reminder
                   </Text>
                   {menuList?.reminder && (
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        color: isDark ? "#6b7280" : "#9ca3af",
-                        marginTop: 1,
-                      }}
-                    >
+                    <Text style={{ fontSize: 12, color: isDark ? "#6b7280" : "#9ca3af", marginTop: 1 }}>
                       Already set — tap to change
                     </Text>
                   )}
                 </View>
                 {menuList?.reminder?.time && reminderCountdown && (
-                  <Text
-                    style={{
-                      fontSize: 12,
-                      color: isDark ? "#6b7280" : "#9ca3af",
-                    }}
-                  >
+                  <Text style={{ fontSize: 12, color: isDark ? "#6b7280" : "#9ca3af" }}>
                     {reminderCountdown} left
                   </Text>
                 )}
@@ -908,23 +765,15 @@ export default function HomeScreen() {
               <TouchableOpacity
                 onPress={handleCancelReminder}
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  paddingHorizontal: 20,
-                  paddingVertical: 16,
+                  flexDirection: "row", alignItems: "center",
+                  paddingHorizontal: 20, paddingVertical: 16,
                   borderBottomWidth: 0.5,
                   borderBottomColor: isDark ? "#374151" : "#f3f4f6",
                   gap: 14,
                 }}
               >
-                <Ionicons
-                  name="notifications-off-outline"
-                  size={20}
-                  color="#f43f5e"
-                />
-                <Text
-                  style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}
-                >
+                <Ionicons name="notifications-off-outline" size={20} color="#f43f5e" />
+                <Text style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}>
                   Cancel Reminder
                 </Text>
               </TouchableOpacity>
@@ -933,17 +782,12 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={handleDeletePress}
               style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingHorizontal: 20,
-                paddingVertical: 16,
-                gap: 14,
+                flexDirection: "row", alignItems: "center",
+                paddingHorizontal: 20, paddingVertical: 16, gap: 14,
               }}
             >
               <Ionicons name="trash-outline" size={20} color="#f43f5e" />
-              <Text
-                style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}
-              >
+              <Text style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}>
                 Delete List
               </Text>
             </TouchableOpacity>
@@ -952,21 +796,12 @@ export default function HomeScreen() {
           <TouchableOpacity
             onPress={() => setMenuVisible(false)}
             style={{
-              marginHorizontal: 16,
-              marginBottom: 24,
-              paddingVertical: 16,
-              borderRadius: 16,
-              alignItems: "center",
+              marginHorizontal: 16, marginBottom: 24,
+              paddingVertical: 16, borderRadius: 16, alignItems: "center",
               backgroundColor: isDark ? "#1f2937" : "#ffffff",
             }}
           >
-            <Text
-              style={{
-                fontSize: 15,
-                fontWeight: "600",
-                color: isDark ? "#f9fafb" : "#111827",
-              }}
-            >
+            <Text style={{ fontSize: 15, fontWeight: "600", color: isDark ? "#f9fafb" : "#111827" }}>
               Cancel
             </Text>
           </TouchableOpacity>
@@ -982,23 +817,12 @@ export default function HomeScreen() {
 
       {/* Create List Modal */}
       <KeyboardModal visible={modalVisible} onClose={handleCloseCreateModal}>
-        <View
-          style={{
-            width: "100%",
-            borderRadius: 24,
-            paddingHorizontal: 24,
-            paddingVertical: 24,
-            backgroundColor: isDark ? "#1f2937" : "#ffffff",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              marginBottom: 16,
-              color: isDark ? "#f9fafb" : "#111827",
-            }}
-          >
+        <View style={{
+          width: "100%", borderRadius: 24,
+          paddingHorizontal: 24, paddingVertical: 24,
+          backgroundColor: isDark ? "#1f2937" : "#ffffff",
+        }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 16, color: isDark ? "#f9fafb" : "#111827" }}>
             New List
           </Text>
           <CategoryPicker
@@ -1009,27 +833,17 @@ export default function HomeScreen() {
             isDark={isDark}
             accent={accent}
           />
-          <Text
-            style={{
-              fontSize: 11,
-              fontWeight: "600",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              marginBottom: 8,
-              color: "#9ca3af",
-            }}
-          >
+          <Text style={{
+            fontSize: 11, fontWeight: "600", textTransform: "uppercase",
+            letterSpacing: 1, marginBottom: 8, color: "#9ca3af",
+          }}>
             List Name
           </Text>
           <TextInput
             style={{
-              borderWidth: 0.5,
-              borderColor: isDark ? "#374151" : "#e5e7eb",
-              borderRadius: 12,
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              fontSize: 15,
-              marginBottom: 16,
+              borderWidth: 0.5, borderColor: isDark ? "#374151" : "#e5e7eb",
+              borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+              fontSize: 15, marginBottom: 16,
               backgroundColor: isDark ? "#111827" : "#f9fafb",
               color: isDark ? "#f9fafb" : "#111827",
             }}
@@ -1048,38 +862,22 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={handleCloseCreateModal}
               style={{
-                flex: 1,
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: "center",
+                flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center",
                 backgroundColor: isDark ? "#374151" : "#f3f4f6",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: isDark ? "#9ca3af" : "#6b7280",
-                }}
-              >
+              <Text style={{ fontSize: 15, fontWeight: "600", color: isDark ? "#9ca3af" : "#6b7280" }}>
                 Cancel
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSaveList}
               style={{
-                flex: 1,
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: "center",
+                flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center",
                 backgroundColor: accent.primary,
               }}
             >
-              <Text
-                style={{ fontSize: 15, fontWeight: "600", color: "#ffffff" }}
-              >
-                Create
-              </Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#ffffff" }}>Create</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -1087,23 +885,12 @@ export default function HomeScreen() {
 
       {/* Edit List Modal */}
       <KeyboardModal visible={editModalVisible} onClose={handleCloseEditModal}>
-        <View
-          style={{
-            width: "100%",
-            borderRadius: 24,
-            paddingHorizontal: 24,
-            paddingVertical: 24,
-            backgroundColor: isDark ? "#1f2937" : "#ffffff",
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 18,
-              fontWeight: "700",
-              marginBottom: 16,
-              color: isDark ? "#f9fafb" : "#111827",
-            }}
-          >
+        <View style={{
+          width: "100%", borderRadius: 24,
+          paddingHorizontal: 24, paddingVertical: 24,
+          backgroundColor: isDark ? "#1f2937" : "#ffffff",
+        }}>
+          <Text style={{ fontSize: 18, fontWeight: "700", marginBottom: 16, color: isDark ? "#f9fafb" : "#111827" }}>
             Edit List
           </Text>
           <CategoryPicker
@@ -1114,27 +901,17 @@ export default function HomeScreen() {
             isDark={isDark}
             accent={accent}
           />
-          <Text
-            style={{
-              fontSize: 11,
-              fontWeight: "600",
-              textTransform: "uppercase",
-              letterSpacing: 1,
-              marginBottom: 8,
-              color: "#9ca3af",
-            }}
-          >
+          <Text style={{
+            fontSize: 11, fontWeight: "600", textTransform: "uppercase",
+            letterSpacing: 1, marginBottom: 8, color: "#9ca3af",
+          }}>
             List Name
           </Text>
           <TextInput
             style={{
-              borderWidth: 0.5,
-              borderColor: isDark ? "#374151" : "#e5e7eb",
-              borderRadius: 12,
-              paddingHorizontal: 16,
-              paddingVertical: 14,
-              fontSize: 15,
-              marginBottom: 16,
+              borderWidth: 0.5, borderColor: isDark ? "#374151" : "#e5e7eb",
+              borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+              fontSize: 15, marginBottom: 16,
               backgroundColor: isDark ? "#111827" : "#f9fafb",
               color: isDark ? "#f9fafb" : "#111827",
             }}
@@ -1149,38 +926,22 @@ export default function HomeScreen() {
             <TouchableOpacity
               onPress={handleCloseEditModal}
               style={{
-                flex: 1,
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: "center",
+                flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center",
                 backgroundColor: isDark ? "#374151" : "#f3f4f6",
               }}
             >
-              <Text
-                style={{
-                  fontSize: 15,
-                  fontWeight: "600",
-                  color: isDark ? "#9ca3af" : "#6b7280",
-                }}
-              >
+              <Text style={{ fontSize: 15, fontWeight: "600", color: isDark ? "#9ca3af" : "#6b7280" }}>
                 Cancel
               </Text>
             </TouchableOpacity>
             <TouchableOpacity
               onPress={handleSaveEdit}
               style={{
-                flex: 1,
-                paddingVertical: 14,
-                borderRadius: 12,
-                alignItems: "center",
+                flex: 1, paddingVertical: 14, borderRadius: 12, alignItems: "center",
                 backgroundColor: accent.primary,
               }}
             >
-              <Text
-                style={{ fontSize: 15, fontWeight: "600", color: "#ffffff" }}
-              >
-                Save
-              </Text>
+              <Text style={{ fontSize: 15, fontWeight: "600", color: "#ffffff" }}>Save</Text>
             </TouchableOpacity>
           </View>
         </View>

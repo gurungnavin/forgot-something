@@ -1,4 +1,4 @@
-export type CategoryKey =
+export type BuiltInCategoryKey =
   | "grocery"
   | "travel"
   | "work"
@@ -11,6 +11,18 @@ export type CategoryKey =
   | "gaming"
   | "shopping"
   | "other";
+
+// Custom categories will have a string id (e.g. "custom_abc123")
+export type CategoryKey = BuiltInCategoryKey | string;
+
+export type Category = {
+  key: CategoryKey;
+  label: string;
+  icon: string;       // Ionicon name
+  color: string;      // hex
+  tint: string;       // rgba tint for background
+  isCustom?: boolean;
+};
 
 export type Item = {
   id: string;
@@ -39,6 +51,8 @@ export type RootStackParamList = {
   TableDetail: { tableId: string };
   Success: { listId: string };
   MissingItems: { missing: string[]; listId: string };
+  Pro: undefined;
+  Interstitial: undefined
 };
 
 // For tables

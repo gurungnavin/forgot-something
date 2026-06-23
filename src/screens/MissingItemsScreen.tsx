@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons'
 import LottieView from 'lottie-react-native'
 import { useTheme } from '../context/ThemeContext'
 import { RootStackParamList } from '../types'
+import { t } from '../i18n/index'
 
 export default function MissingItemsScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>()

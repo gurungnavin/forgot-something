@@ -16,13 +16,15 @@ import ListDetailScreen from "./src/screens/ListDetailScreen";
 import SuccessScreen from "./src/screens/SuccessScreen";
 import MissingItemsScreen from "./src/screens/MissingItemsScreen";
 import TableDetailScreen from "./src/screens/TableDetailScreen";
-import OnboardingScreen, {
-  ONBOARDING_KEY,
-} from "./src/screens/OnboardingScreen";
+import OnboardingScreen, { ONBOARDING_KEY } from "./src/screens/OnboardingScreen";
 import TransitionScreen from "./src/screens/TransitionScreen";
+import ProScreen from "./src/screens/ProScreen";
+import InterstitialAdScreen from "./src/screens/InterstitialAdScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import { setupNotifications } from "./src/utils/notifications";
 import { RootStackParamList } from "./src/types";
+import { initI18n } from "./src/i18n";
+
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -49,17 +51,17 @@ function TabNavigator() {
   };
 
   const TAB_ICONS: Record<string, { active: any; inactive: any }> = {
-    Home: { active: "home", inactive: "home-outline" },
-    Table: { active: "grid", inactive: "grid-outline" },
+    Home:     { active: "home",     inactive: "home-outline"     },
+    Table:    { active: "grid",     inactive: "grid-outline"     },
     Settings: { active: "settings", inactive: "settings-outline" },
   };
 
   const renderScreen = () => {
     switch (activeTab) {
-      case "Home": return <HomeScreen />;
-      case "Table": return <TableScreen />;
+      case "Home":     return <HomeScreen />;
+      case "Table":    return <TableScreen />;
       case "Settings": return <SettingsScreen />;
-      default: return <HomeScreen />;
+      default:         return <HomeScreen />;
     }
   };
 
@@ -71,19 +73,13 @@ function TabNavigator() {
       <View
         style={{
           position: "absolute",
-          bottom: 24,
-          left: 24,
-          right: 24,
-          height: 64,
-          borderRadius: 40,
+          bottom: 24, left: 24, right: 24,
+          height: 64, borderRadius: 40,
           backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
-          flexDirection: "row",
-          alignItems: "center",
+          flexDirection: "row", alignItems: "center",
           shadowColor: "#000",
           shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.15,
-          shadowRadius: 12,
-          elevation: 8,
+          shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
         }}
         onLayout={(e) => {
           const width = e.nativeEvent.layout.width;
@@ -91,14 +87,12 @@ function TabNavigator() {
           translateX.setValue(tabs.indexOf(activeTab) * (width / tabs.length));
         }}
       >
-        {/* Sliding pill — only render after width is known */}
+        {/* Sliding pill */}
         {tabBarWidth > 0 && (
           <Animated.View
             style={{
               position: "absolute",
-              width: PILL_WIDTH,
-              height: 44,
-              borderRadius: 22,
+              width: PILL_WIDTH, height: 44, borderRadius: 22,
               backgroundColor: isDark ? "#3a3a3c" : "#f3f4f6",
               transform: [{ translateX }],
               left: (tabWidth - PILL_WIDTH) / 2,
@@ -106,17 +100,11 @@ function TabNavigator() {
           />
         )}
 
-        {/* Tabs */}
         {tabs.map((tab, index) => (
           <TouchableOpacity
             key={tab}
             onPress={() => handleTabPress(tab, index)}
-            style={{
-              flex: 1,
-              alignItems: "center",
-              justifyContent: "center",
-              height: 64,
-            }}
+            style={{ flex: 1, alignItems: "center", justifyContent: "center", height: 64 }}
             activeOpacity={1}
           >
             <Ionicons
@@ -133,35 +121,27 @@ function TabNavigator() {
 
 // ── Root Stack ─────────────────────────────────────────────────────────────────
 function RootNavigator() {
-  const [initialRoute, setInitialRoute] = useState<
-    keyof RootStackParamList | null
-  >(null);
-  const navigationRef =
-    useRef<NavigationContainerRef<RootStackParamList>>(null);
+  const [initialRoute, setInitialRoute] = useState<keyof RootStackParamList | null>(null);
+  const navigationRef = useRef<NavigationContainerRef<RootStackParamList>>(null);
 
   useEffect(() => {
     const checkOnboarding = async () => {
       const seen = await AsyncStorage.getItem(ONBOARDING_KEY);
-      setInitialRoute("Onboarding") // ← force show onboarding
-      // setInitialRoute(seen ? "Tabs" : "Onboarding");
+      setInitialRoute(seen ? "Tabs" : "Onboarding");
     };
     checkOnboarding();
   }, []);
 
   useEffect(() => {
-    const subscription = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        const listId = response.notification.request.content.data?.listId as
-          | string
-          | undefined;
-        if (listId && navigationRef.current) {
-          navigationRef.current.navigate("Tabs" as any);
-          setTimeout(() => {
-            navigationRef.current?.navigate("ListDetail", { listId });
-          }, 100);
-        }
-      },
-    );
+    const subscription = Notifications.addNotificationResponseReceivedListener((response) => {
+      const listId = response.notification.request.content.data?.listId as string | undefined;
+      if (listId && navigationRef.current) {
+        navigationRef.current.navigate("Tabs" as any);
+        setTimeout(() => {
+          navigationRef.current?.navigate("ListDetail", { listId });
+        }, 100);
+      }
+    });
     return () => subscription.remove();
   }, []);
 
@@ -169,45 +149,17 @@ function RootNavigator() {
 
   return (
     <NavigationContainer ref={navigationRef}>
-      <Stack.Navigator
-        initialRouteName={initialRoute}
-        screenOptions={{ animation: "fade" }}
-      >
+      <Stack.Navigator initialRouteName={initialRoute} screenOptions={{ animation: "fade" }}>
+        <Stack.Screen name="Onboarding"    component={OnboardingScreen}    options={{ headerShown: false }} />
+        <Stack.Screen name="Transition"    component={TransitionScreen}    options={{ headerShown: false }} />
+        <Stack.Screen name="Tabs"          component={TabNavigator}        options={{ headerShown: false }} />
+        <Stack.Screen name="ListDetail"    component={ListDetailScreen}    options={{ headerShown: false }} />
+        <Stack.Screen name="TableDetail"   component={TableDetailScreen}   options={{ headerShown: false }} />
+        <Stack.Screen name="Success"       component={SuccessScreen}       options={{ headerShown: false }} />
+        <Stack.Screen name="MissingItems"  component={MissingItemsScreen}  options={{ headerShown: false }} />
+        <Stack.Screen name="Pro" component={ProScreen} options={{ headerShown: false }} />
         <Stack.Screen
-          name="Onboarding"
-          component={OnboardingScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Transition"
-          component={TransitionScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Tabs"
-          component={TabNavigator}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="ListDetail"
-          component={ListDetailScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="TableDetail"
-          component={TableDetailScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="Success"
-          component={SuccessScreen}
-          options={{ headerShown: false }}
-        />
-        <Stack.Screen
-          name="MissingItems"
-          component={MissingItemsScreen}
-          options={{ headerShown: false }}
-        />
+          name="Interstitial" component={InterstitialAdScreen} options={{ headerShown: false, animation: "fade" }} />
       </Stack.Navigator>
     </NavigationContainer>
   );
@@ -216,6 +168,7 @@ function RootNavigator() {
 // ── App ────────────────────────────────────────────────────────────────────────
 export default function App() {
   useEffect(() => {
+    initI18n();
     setupNotifications();
   }, []);
 

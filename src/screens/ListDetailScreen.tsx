@@ -23,6 +23,7 @@ import ProgressBar from "../components/ProgressBar";
 import KeyboardModal from "../components/KeyboardModal";
 import ChecklistItem from "../components/ChecklistItem";
 import ReminderModal from "../components/ReminderModal";
+import IconTile from "../components/IconTile";
 import { Ionicons } from "@expo/vector-icons";
 import { CATEGORIES } from "../constants/categories";
 import { List, Item, RootStackParamList } from "../types";
@@ -33,6 +34,7 @@ import {
   scheduleReminder,
   cancelReminder,
 } from "../utils/notifications";
+import { t } from "../i18n/index";
 
 export default function ListDetailScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -41,18 +43,18 @@ export default function ListDetailScreen() {
   const { isDark, accent } = useTheme();
   const { lists, refreshLists, editList } = useLists();
 
-  const [list, setList]                       = useState<List | null>(null);
-  const [addModalVisible, setAddModalVisible] = useState(false);
-  const [newItemLabel, setNewItemLabel]       = useState("");
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  const [editingItem, setEditingItem]         = useState<Item | null>(null);
-  const [editLabel, setEditLabel]             = useState("");
-  const [menuItem, setMenuItem]               = useState<Item | null>(null);
-  const [menuVisible, setMenuVisible]         = useState(false);
-  const [headerMenuVisible, setHeaderMenuVisible] = useState(false);
+  const [list, setList]                             = useState<List | null>(null);
+  const [addModalVisible, setAddModalVisible]       = useState(false);
+  const [newItemLabel, setNewItemLabel]             = useState("");
+  const [editModalVisible, setEditModalVisible]     = useState(false);
+  const [editingItem, setEditingItem]               = useState<Item | null>(null);
+  const [editLabel, setEditLabel]                   = useState("");
+  const [menuItem, setMenuItem]                     = useState<Item | null>(null);
+  const [menuVisible, setMenuVisible]               = useState(false);
+  const [headerMenuVisible, setHeaderMenuVisible]   = useState(false);
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
-  const [toastMessage, setToastMessage]       = useState("");
-  const [toastVisible, setToastVisible]       = useState(false);
+  const [toastMessage, setToastMessage]             = useState("");
+  const [toastVisible, setToastVisible]             = useState(false);
 
   const swipeableRefs = useRef<Map<string, any>>(new Map());
 
@@ -219,7 +221,7 @@ export default function ListDetailScreen() {
     const granted = await requestNotificationPermission();
     if (!granted) { Alert.alert("Permission Denied", "Enable notifications in Settings."); return; }
     await cancelReminder(list!.id);
-    await scheduleReminder(`${list!.name}`, "Don't forget to check your list!", date, list!.id);
+    await scheduleReminder(list!.name, "Don't forget to check your list!", date, list!.id);
     await updateList({ ...list!, reminder: { time: date.toISOString() } });
     showToast("Reminder set!");
   };
@@ -247,7 +249,6 @@ export default function ListDetailScreen() {
   const totalCount   = list?.items.length ?? 0;
   const progress     = totalCount > 0 ? checkedCount / totalCount : 0;
   const allChecked   = totalCount > 0 && checkedCount === totalCount;
-  const category     = CATEGORIES.find((c) => c.key === list?.category);
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? "#111827" : accent.light }}>
@@ -269,7 +270,7 @@ export default function ListDetailScreen() {
           activeOpacity={0.7}
         >
           <Ionicons name="chevron-back" size={16} color={accent.primary} />
-          <Text style={{ fontSize: 15, fontWeight: '600', color: accent.primary }}>Back</Text>
+          <Text style={{ fontSize: 15, fontWeight: '600', color: accent.primary }}>{t("common.back")}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -288,19 +289,7 @@ export default function ListDetailScreen() {
       {/* ── List header ──────────────────────────────────────────────────── */}
       <View style={{ paddingHorizontal: 20, marginBottom: 12 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 4 }}>
-          {category && (
-            <View style={{
-              width: 40, height: 40, borderRadius: 12,
-              alignItems: 'center', justifyContent: 'center',
-              backgroundColor: isDark ? '#1f2937' : accent.primary + '18',
-            }}>
-              <Ionicons
-                name={category.icon as any}
-                size={20}
-                color={isDark ? '#fda4af' : accent.primary}
-              />
-            </View>
-          )}
+          <IconTile categoryKey={list?.category} size="lg" />
           <Text style={{
             fontSize: 26, fontWeight: '800', flex: 1, letterSpacing: -0.5,
             color: isDark ? '#f9fafb' : '#111827',
@@ -310,7 +299,7 @@ export default function ListDetailScreen() {
         </View>
 
         {/* Item count + reminder */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginLeft: 60 }}>
           <Text style={{ fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
             {checkedCount}/{totalCount} items checked
           </Text>
@@ -388,7 +377,6 @@ export default function ListDetailScreen() {
         position: 'absolute', bottom: 32, left: 20, right: 20,
         flexDirection: 'row', gap: 12,
       }}>
-        {/* Checkout — only show when items exist */}
         {totalCount > 0 && (
           <TouchableOpacity
             onPress={handleCheckout}
@@ -411,7 +399,6 @@ export default function ListDetailScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Add item FAB */}
         <TouchableOpacity
           onPress={handleAddItem}
           style={{
@@ -688,16 +675,12 @@ export default function ListDetailScreen() {
       {/* ── Toast ────────────────────────────────────────────────────────── */}
       {toastVisible && (
         <View
-          style={{
-            position: 'absolute', bottom: 120, left: 0, right: 0,
-            alignItems: 'center', zIndex: 50,
-          }}
+          style={{ position: 'absolute', bottom: 120, left: 0, right: 0, alignItems: 'center', zIndex: 50 }}
           pointerEvents="none"
         >
           <View style={{
             backgroundColor: isDark ? '#1f2937' : '#111827',
-            paddingHorizontal: 20, paddingVertical: 10,
-            borderRadius: 20,
+            paddingHorizontal: 20, paddingVertical: 10, borderRadius: 20,
             flexDirection: 'row', alignItems: 'center', gap: 8,
           }}>
             <Ionicons name="checkmark-circle-outline" size={16} color="#4ade80" />

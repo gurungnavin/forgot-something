@@ -2,13 +2,14 @@ import { createContext, useContext, useEffect, useState } from 'react'
 import { useColorScheme } from 'react-native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-export type AccentColor = 'rose' | 'purple' | 'blue' | 'green' | 'custom'
+export type AccentColor = 'rose' | 'coral' | 'purple' | 'blue' | 'green' | 'custom'
 
 export const ACCENT_COLORS: Record<Exclude<AccentColor, 'custom'>, { primary: string; light: string; text: string }> = {
-  rose:   { primary: '#fb7185', light: '#fff1f2', text: '#f43f5e' },
-  purple: { primary: '#c084fc', light: '#faf5ff', text: '#a855f7' },
-  blue:   { primary: '#60a5fa', light: '#eff6ff', text: '#3b82f6' },
-  green:  { primary: '#4ade80', light: '#f0fdf4', text: '#22c55e' },
+  rose:   { primary: '#EE5D74', light: '#fff1f2', text: '#EE5D74' },
+  coral:  { primary: '#FB7150', light: '#fff4f0', text: '#FB7150' },
+  purple: { primary: '#8B6BE8', light: '#f5f3ff', text: '#8B6BE8' },
+  blue:   { primary: '#3E8BF5', light: '#eff6ff', text: '#3E8BF5' },
+  green:  { primary: '#27B073', light: '#f0fdf4', text: '#27B073' },
 }
 
 export type ColorSchemeOption = 'light' | 'dark' | 'system'
@@ -32,7 +33,7 @@ const STORAGE_KEY_CUSTOM = '@theme_custom_hex'
 
 // ── Derive accent from any hex ─────────────────────────────────────────────────
 function deriveAccent(hex: string) {
-  const safe = hex && /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : '#fb7185' // ✅ guard
+  const safe = hex && /^#[0-9A-Fa-f]{6}$/.test(hex) ? hex : '#EE5D74'
   return {
     primary: safe,
     light: safe + '22',
@@ -44,8 +45,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const systemScheme = useColorScheme()
   const [colorScheme, setColorSchemeState] = useState<ColorSchemeOption>('system')
   const [accentColor, setAccentColorState] = useState<AccentColor>('rose')
-  const [customHex, setCustomHexState] = useState<string>('#fb7185')
-  const [loaded, setLoaded] = useState(false) // ✅ prevent render before prefs load
+  const [customHex, setCustomHexState] = useState<string>('#EE5D74')
+  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -55,7 +56,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       if (savedScheme) setColorSchemeState(savedScheme as ColorSchemeOption)
       if (savedAccent) setAccentColorState(savedAccent as AccentColor)
       if (savedCustom) setCustomHexState(savedCustom)
-      setLoaded(true) // ✅ done loading
+      setLoaded(true)
     }
     load()
   }, [])
@@ -80,13 +81,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEY_CUSTOM, hex)
   }
 
-  // ✅ always safe — never undefined
   const accent =
     accentColor === 'custom'
-      ? deriveAccent(customHex || '#fb7185')
+      ? deriveAccent(customHex || '#EE5D74')
       : ACCENT_COLORS[accentColor] ?? ACCENT_COLORS['rose']
 
-  // ✅ don't render children until prefs are loaded
   if (!loaded) return null
 
   return (

@@ -5,12 +5,16 @@ import {
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme, AccentColor, ColorSchemeOption } from '../context/ThemeContext'
+import { useLocale, notifyLocaleChange } from '../hooks/useLocale'
+import { SUPPORTED_LOCALES, SupportedLocale } from '../i18n/index'
+import { t } from '../i18n/index'
 
-const COLOR_OPTIONS: { key: AccentColor; hex: string; label: string; icon: string }[] = [
-  { key: 'rose',   hex: '#fb7185', label: 'Rose',   icon: 'heart'        },
-  { key: 'purple', hex: '#c084fc', label: 'Purple', icon: 'sparkles'     },
-  { key: 'blue',   hex: '#60a5fa', label: 'Blue',   icon: 'water'        },
-  { key: 'green',  hex: '#4ade80', label: 'Green',  icon: 'leaf'         },
+const COLOR_OPTIONS: { key: AccentColor; hex: string; label: string }[] = [
+  { key: 'rose',   hex: '#EE5D74', label: 'Rose'   },
+  { key: 'coral',  hex: '#FB7150', label: 'Coral'  },
+  { key: 'purple', hex: '#8B6BE8', label: 'Purple' },
+  { key: 'blue',   hex: '#3E8BF5', label: 'Blue'   },
+  { key: 'green',  hex: '#27B073', label: 'Green'  },
 ]
 
 const SCHEME_OPTIONS: { key: ColorSchemeOption; label: string; icon: string }[] = [
@@ -30,55 +34,32 @@ const PALETTE = [
   '#94a3b8','#64748b','#6b7280','#4b5563','#374151',
 ]
 
-// ── Section Header ─────────────────────────────────────────────────────────────
 function SectionHeader({ title, isDark }: { title: string; isDark: boolean }) {
   return (
     <Text style={{
-      fontSize: 12,
-      fontWeight: '600',
-      textTransform: 'uppercase',
-      letterSpacing: 1,
-      color: isDark ? '#6b7280' : '#9ca3af',
-      marginBottom: 8,
-      marginTop: 24,
-      paddingHorizontal: 4,
+      fontSize: 12, fontWeight: '600', textTransform: 'uppercase',
+      letterSpacing: 1, color: isDark ? '#6b7280' : '#9ca3af',
+      marginBottom: 8, marginTop: 24, paddingHorizontal: 4,
     }}>
       {title}
     </Text>
   )
 }
 
-// ── Settings Row ───────────────────────────────────────────────────────────────
 function SettingsRow({
-  icon,
-  iconBg,
-  label,
-  subtitle,
-  right,
-  onPress,
-  isDark,
-  isFirst,
-  isLast,
+  icon, iconBg, label, subtitle, right, onPress, isDark, isFirst, isLast,
 }: {
-  icon: string
-  iconBg: string
-  label: string
-  subtitle?: string
-  right?: React.ReactNode
-  onPress?: () => void
-  isDark: boolean
-  isFirst?: boolean
-  isLast?: boolean
+  icon: string; iconBg: string; label: string; subtitle?: string
+  right?: React.ReactNode; onPress?: () => void
+  isDark: boolean; isFirst?: boolean; isLast?: boolean
 }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={onPress ? 0.7 : 1}
       style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 13,
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: 16, paddingVertical: 13,
         backgroundColor: isDark ? '#1f2937' : '#ffffff',
         borderTopLeftRadius: isFirst ? 16 : 0,
         borderTopRightRadius: isFirst ? 16 : 0,
@@ -89,40 +70,23 @@ function SettingsRow({
         gap: 14,
       }}
     >
-      {/* Icon */}
       <View style={{
-        width: 34,
-        height: 34,
-        borderRadius: 8,
+        width: 34, height: 34, borderRadius: 8,
         backgroundColor: iconBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
+        alignItems: 'center', justifyContent: 'center', flexShrink: 0,
       }}>
         <Ionicons name={icon as any} size={17} color="#ffffff" />
       </View>
-
-      {/* Label */}
       <View style={{ flex: 1 }}>
-        <Text style={{
-          fontSize: 15,
-          fontWeight: '500',
-          color: isDark ? '#f9fafb' : '#111827',
-        }}>
+        <Text style={{ fontSize: 15, fontWeight: '500', color: isDark ? '#f9fafb' : '#111827' }}>
           {label}
         </Text>
         {subtitle && (
-          <Text style={{
-            fontSize: 12,
-            color: isDark ? '#6b7280' : '#9ca3af',
-            marginTop: 1,
-          }}>
+          <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af', marginTop: 1 }}>
             {subtitle}
           </Text>
         )}
       </View>
-
-      {/* Right */}
       {right}
     </TouchableOpacity>
   )
@@ -134,10 +98,13 @@ export default function SettingsScreen() {
     accent, setColorScheme, setAccentColor, setCustomHex
   } = useTheme()
 
-  const [pickerVisible, setPickerVisible] = useState(false)
-  const [tempColor, setTempColor] = useState(customHex)
-  const [hexInput, setHexInput] = useState(customHex)
-  const [hexError, setHexError] = useState(false)
+  const { locale, changeLocale } = useLocale()
+
+  const [pickerVisible, setPickerVisible]   = useState(false)
+  const [langVisible,   setLangVisible]     = useState(false)
+  const [tempColor,     setTempColor]       = useState(customHex)
+  const [hexInput,      setHexInput]        = useState(customHex)
+  const [hexError,      setHexError]        = useState(false)
 
   const isValidHex = (hex: string) => /^#[0-9A-Fa-f]{6}$/.test(hex)
 
@@ -165,54 +132,30 @@ export default function SettingsScreen() {
     setPickerVisible(false)
   }
 
-  const currentColorLabel = accentColor === 'custom'
-    ? customHex.toUpperCase()
-    : accentColor.charAt(0).toUpperCase() + accentColor.slice(1)
+  const currentLangLabel = SUPPORTED_LOCALES.find(l => l.code === locale)?.nativeLabel ?? 'English'
 
   return (
-    <View style={{
-      flex: 1,
-      backgroundColor: isDark ? '#111827' : accent.light,
-    }}>
+    <View style={{ flex: 1, backgroundColor: isDark ? '#111827' : accent.light }}>
       <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={{
-          paddingHorizontal: 20,
-          paddingTop: 64,
-          paddingBottom: 140,
-        }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 64, paddingBottom: 140 }}
       >
-        {/* Header */}
         <Text style={{
-          fontSize: 32,
-          fontWeight: '800',
+          fontSize: 32, fontWeight: '800',
           color: isDark ? '#f9fafb' : '#111827',
-          marginBottom: 4,
-          letterSpacing: -0.5,
+          marginBottom: 4, letterSpacing: -0.5,
         }}>
-          Settings
+          {t("settings.title")}
         </Text>
-        <Text style={{
-          fontSize: 13,
-          color: isDark ? '#6b7280' : '#9ca3af',
-          marginBottom: 8,
-        }}>
+        <Text style={{ fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af', marginBottom: 8 }}>
           Customise your experience
         </Text>
 
         {/* ── Appearance ─────────────────────────────────────────────────── */}
-        <SectionHeader title="Appearance" isDark={isDark} />
-        <View style={{
-          borderRadius: 16,
-          overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.2 : 0.04,
-          shadowRadius: 4,
-          elevation: 1,
-        }}>
+        <SectionHeader title={t("settings.appearance")} isDark={isDark} />
+        <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           {SCHEME_OPTIONS.map((option, index) => (
             <SettingsRow
               key={option.key}
@@ -233,16 +176,8 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── App Colour ──────────────────────────────────────────────────── */}
-        <SectionHeader title="App Colour" isDark={isDark} />
-        <View style={{
-          borderRadius: 16,
-          overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.2 : 0.04,
-          shadowRadius: 4,
-          elevation: 1,
-        }}>
+        <SectionHeader title={t("settings.appColour")} isDark={isDark} />
+        <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           {COLOR_OPTIONS.map((color, index) => (
             <SettingsRow
               key={color.key}
@@ -284,17 +219,25 @@ export default function SettingsScreen() {
           />
         </View>
 
+        {/* ── Language ────────────────────────────────────────────────────── */}
+        <SectionHeader title={t("settings.language")} isDark={isDark} />
+        <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
+          <SettingsRow
+            icon="language-outline"
+            iconBg="#6366f1"
+            label={t("settings.language")}
+            subtitle={currentLangLabel}
+            isDark={isDark}
+            isFirst={true}
+            isLast={true}
+            onPress={() => setLangVisible(true)}
+            right={<Ionicons name="chevron-forward" size={18} color={isDark ? '#4b5563' : '#d1d5db'} />}
+          />
+        </View>
+
         {/* ── About ──────────────────────────────────────────────────────── */}
-        <SectionHeader title="About" isDark={isDark} />
-        <View style={{
-          borderRadius: 16,
-          overflow: 'hidden',
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: isDark ? 0.2 : 0.04,
-          shadowRadius: 4,
-          elevation: 1,
-        }}>
+        <SectionHeader title={t("settings.about")} isDark={isDark} />
+        <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           <SettingsRow
             icon="information-circle-outline"
             iconBg="#3b82f6"
@@ -303,11 +246,7 @@ export default function SettingsScreen() {
             isDark={isDark}
             isFirst={true}
             isLast={false}
-            right={
-              <Text style={{ fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>
-                v1.0.0
-              </Text>
-            }
+            right={<Text style={{ fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af' }}>v1.0.0</Text>}
           />
           <SettingsRow
             icon="star-outline"
@@ -318,40 +257,87 @@ export default function SettingsScreen() {
             isFirst={false}
             isLast={true}
             onPress={() => {}}
-            right={
-              <Ionicons name="chevron-forward" size={18} color={isDark ? '#4b5563' : '#d1d5db'} />
-            }
+            right={<Ionicons name="chevron-forward" size={18} color={isDark ? '#4b5563' : '#d1d5db'} />}
           />
         </View>
-
       </ScrollView>
+
+      {/* ── Language Picker Modal ───────────────────────────────────────── */}
+      <Modal visible={langVisible} transparent animationType="slide">
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <View style={{
+            backgroundColor: isDark ? '#1f2937' : '#ffffff',
+            borderTopLeftRadius: 32, borderTopRightRadius: 32,
+            padding: 24, paddingBottom: 40,
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: isDark ? '#f9fafb' : '#111827' }}>
+                Language
+              </Text>
+              <TouchableOpacity onPress={() => setLangVisible(false)}>
+                <Ionicons name="close-circle" size={28} color={isDark ? '#6b7280' : '#9ca3af'} />
+              </TouchableOpacity>
+            </View>
+
+            {SUPPORTED_LOCALES.map((lang, index) => {
+              const isSelected = locale === lang.code
+              const isLast = index === SUPPORTED_LOCALES.length - 1
+              return (
+                <TouchableOpacity
+                  key={lang.code}
+                  onPress={async () => {
+                    await changeLocale(lang.code as SupportedLocale)
+                    setLangVisible(false)
+                  }}
+                  activeOpacity={0.7}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center',
+                    paddingVertical: 16, paddingHorizontal: 4,
+                    borderBottomWidth: isLast ? 0 : 0.5,
+                    borderBottomColor: isDark ? 'rgba(255,255,255,0.06)' : '#f3f4f6',
+                    gap: 14,
+                  }}
+                >
+                  {/* Flag-like language code badge */}
+                  <View style={{
+                    width: 44, height: 44, borderRadius: 12,
+                    backgroundColor: isSelected ? accent.primary : isDark ? '#374151' : '#f3f4f6',
+                    alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <Text style={{ fontSize: 13, fontWeight: '700', color: isSelected ? '#ffffff' : isDark ? '#9ca3af' : '#6b7280' }}>
+                      {lang.code.toUpperCase()}
+                    </Text>
+                  </View>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: isDark ? '#f9fafb' : '#111827' }}>
+                      {lang.nativeLabel}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: isDark ? '#6b7280' : '#9ca3af', marginTop: 1 }}>
+                      {lang.label}
+                    </Text>
+                  </View>
+
+                  {isSelected && (
+                    <Ionicons name="checkmark-circle" size={22} color={accent.primary} />
+                  )}
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </View>
+      </Modal>
 
       {/* ── Custom Colour Picker Modal ──────────────────────────────────── */}
       <Modal visible={pickerVisible} transparent animationType="slide">
-        <View style={{
-          flex: 1,
-          justifyContent: 'flex-end',
-          backgroundColor: 'rgba(0,0,0,0.5)',
-        }}>
+        <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <View style={{
             backgroundColor: isDark ? '#1f2937' : '#ffffff',
-            borderTopLeftRadius: 32,
-            borderTopRightRadius: 32,
-            padding: 24,
-            paddingBottom: 40,
+            borderTopLeftRadius: 32, borderTopRightRadius: 32,
+            padding: 24, paddingBottom: 40,
           }}>
-            {/* Modal Header */}
-            <View style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: 20,
-            }}>
-              <Text style={{
-                fontSize: 18,
-                fontWeight: '700',
-                color: isDark ? '#f9fafb' : '#111827',
-              }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: isDark ? '#f9fafb' : '#111827' }}>
                 Pick a Colour
               </Text>
               <TouchableOpacity onPress={() => setPickerVisible(false)}>
@@ -359,12 +345,9 @@ export default function SettingsScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* Preview + Hex Input */}
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
               <View style={{
-                width: 52,
-                height: 52,
-                borderRadius: 16,
+                width: 52, height: 52, borderRadius: 16,
                 backgroundColor: isValidHex(tempColor) ? tempColor : '#cccccc',
               }} />
               <View style={{ flex: 1 }}>
@@ -378,11 +361,8 @@ export default function SettingsScreen() {
                   style={{
                     backgroundColor: isDark ? '#374151' : '#f3f4f6',
                     color: isDark ? '#f9fafb' : '#111827',
-                    borderRadius: 12,
-                    paddingHorizontal: 16,
-                    paddingVertical: 12,
-                    fontSize: 16,
-                    fontWeight: '600',
+                    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
+                    fontSize: 16, fontWeight: '600',
                     borderWidth: hexError ? 1.5 : 0,
                     borderColor: '#ef4444',
                   }}
@@ -395,7 +375,6 @@ export default function SettingsScreen() {
               </View>
             </View>
 
-            {/* Colour Palette Grid */}
             <ScrollView style={{ maxHeight: 180 }} showsVerticalScrollIndicator={false}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, justifyContent: 'center' }}>
                 {PALETTE.map((hex) => {
@@ -405,12 +384,9 @@ export default function SettingsScreen() {
                       key={hex}
                       onPress={() => handleSwatchPress(hex)}
                       style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: 22,
+                        width: 44, height: 44, borderRadius: 22,
                         backgroundColor: hex,
-                        alignItems: 'center',
-                        justifyContent: 'center',
+                        alignItems: 'center', justifyContent: 'center',
                         borderWidth: isSelected ? 3 : 0,
                         borderColor: isDark ? '#ffffff' : '#374151',
                         transform: [{ scale: isSelected ? 1.15 : 1 }],
@@ -423,23 +399,17 @@ export default function SettingsScreen() {
               </View>
             </ScrollView>
 
-            {/* Apply Button */}
             <TouchableOpacity
               onPress={handleConfirm}
               disabled={hexError}
               style={{
-                marginTop: 20,
-                paddingVertical: 16,
-                borderRadius: 20,
-                alignItems: 'center',
+                marginTop: 20, paddingVertical: 16, borderRadius: 20, alignItems: 'center',
                 backgroundColor: isValidHex(tempColor) ? tempColor : '#9ca3af',
                 opacity: hexError ? 0.5 : 1,
               }}
               activeOpacity={0.85}
             >
-              <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>
-                Apply Colour
-              </Text>
+              <Text style={{ color: '#ffffff', fontWeight: '700', fontSize: 16 }}>Apply Colour</Text>
             </TouchableOpacity>
           </View>
         </View>
