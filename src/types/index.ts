@@ -51,7 +51,6 @@ export type RootStackParamList = {
   TableDetail: { tableId: string };
   Success: { listId: string };
   MissingItems: { missing: string[]; listId: string };
-  Pro: undefined;
   Interstitial: undefined
 };
 

@@ -18,7 +18,8 @@ import { t } from "../i18n/index";
 const { width, height } = Dimensions.get("window");
 
 const AD_LAST_SHOWN_KEY = "quikli_interstitial_last_shown";
-const AD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+// const AD_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
+const AD_INTERVAL_MS = 0;
 async function shouldShowAd(): Promise<boolean> {
   try {
     const raw = await AsyncStorage.getItem(AD_LAST_SHOWN_KEY);

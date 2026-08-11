@@ -46,10 +46,10 @@ const ICON_OPTIONS: { icon: string; color: string }[] = [
 ];
 
 const COLUMN_TYPES: { type: ColumnType; label: string; icon: string }[] = [
-  { type: "text",     label: "Text",     icon: "text-outline"      },
+  { type: "text",     label: "Text",     icon: "text-outline"       },
   { type: "number",   label: "Number",   icon: "calculator-outline" },
-  { type: "checkbox", label: "Checkbox", icon: "checkbox-outline"  },
-  { type: "date",     label: "Date",     icon: "calendar-outline"  },
+  { type: "checkbox", label: "Checkbox", icon: "checkbox-outline"   },
+  { type: "date",     label: "Date",     icon: "calendar-outline"   },
 ];
 
 const COLUMN_TYPE_ICONS: Record<ColumnType, string> = {
@@ -72,17 +72,13 @@ export default function TableScreen() {
   const [newColumnLabel,   setNewColumnLabel]   = useState("");
   const [newColumnType,    setNewColumnType]    = useState<ColumnType>("text");
 
-  const [editVisible,   setEditVisible]   = useState(false);
-  const [editingTable,  setEditingTable]  = useState<CustomTable | null>(null);
-  const [menuVisible,   setMenuVisible]   = useState(false);
-  const [menuTable,     setMenuTable]     = useState<CustomTable | null>(null);
+  const [editVisible,          setEditVisible]          = useState(false);
+  const [editingTable,         setEditingTable]         = useState<CustomTable | null>(null);
+  const [menuVisible,          setMenuVisible]          = useState(false);
+  const [menuTable,            setMenuTable]            = useState<CustomTable | null>(null);
   const [reminderModalVisible, setReminderModalVisible] = useState(false);
 
-  useFocusEffect(
-    useCallback(() => {
-      refreshTables();
-    }, []),
-  );
+  useFocusEffect(useCallback(() => { refreshTables(); }, []));
 
   const handleOpenEdit = (table: CustomTable) => {
     setEditingTable(table);
@@ -99,24 +95,17 @@ export default function TableScreen() {
   };
 
   const handleOpenCreate = () => {
-    setTableName("");
-    setTableIcon("clipboard-outline");
-    setTableDescription("");
-    setColumns([]);
-    setNewColumnLabel("");
-    setNewColumnType("text");
+    setTableName(""); setTableIcon("clipboard-outline");
+    setTableDescription(""); setColumns([]);
+    setNewColumnLabel(""); setNewColumnType("text");
     setCreateVisible(true);
   };
 
   const handleAddColumn = () => {
     const label = newColumnLabel.trim();
     if (!label) return;
-    setColumns((prev) => [
-      ...prev,
-      { id: uuid.v4() as string, label, type: newColumnType },
-    ]);
-    setNewColumnLabel("");
-    setNewColumnType("text");
+    setColumns((prev) => [...prev, { id: uuid.v4() as string, label, type: newColumnType }]);
+    setNewColumnLabel(""); setNewColumnType("text");
   };
 
   const handleRemoveColumn = (id: string) =>
@@ -141,10 +130,7 @@ export default function TableScreen() {
     setCreateVisible(false);
   };
 
-  const handleOpenMenu = (table: CustomTable) => {
-    setMenuTable(table);
-    setMenuVisible(true);
-  };
+  const handleOpenMenu = (table: CustomTable) => { setMenuTable(table); setMenuVisible(true); };
 
   const handleDeletePress = () => {
     setMenuVisible(false);
@@ -152,12 +138,8 @@ export default function TableScreen() {
     Alert.alert("Delete Table", `Delete "${menuTable.name}"?`, [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          await removeTable(menuTable.id);
-          setMenuTable(null);
-        },
+        text: "Delete", style: "destructive",
+        onPress: async () => { await removeTable(menuTable.id); setMenuTable(null); },
       },
     ]);
   };
@@ -165,17 +147,9 @@ export default function TableScreen() {
   const handleSetReminder = async (date: Date) => {
     if (!menuTable) return;
     const granted = await requestNotificationPermission();
-    if (!granted) {
-      Alert.alert("Permission Denied", "Enable notifications in Settings.");
-      return;
-    }
+    if (!granted) { Alert.alert("Permission Denied", "Enable notifications in Settings."); return; }
     await cancelReminder(menuTable.id);
-    await scheduleReminder(
-      menuTable.name,
-      "Don't forget to follow up on your table!",
-      date,
-      menuTable.id,
-    );
+    await scheduleReminder(menuTable.name, "Don't forget to follow up on your table!", date, menuTable.id);
     await editTable({ ...menuTable, reminder: { time: date.toISOString() } });
     setMenuTable(null);
   };
@@ -188,43 +162,43 @@ export default function TableScreen() {
     setMenuTable(null);
   };
 
+  const getIconColor = (icon: string) =>
+    ICON_OPTIONS.find((o) => o.icon === icon)?.color ?? "#6b7280";
+
   const inputStyle = {
-    borderWidth: 0.5,
-    borderColor: isDark ? "#374151" : "#e5e7eb",
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    marginBottom: 16,
+    borderWidth: 0.5, borderColor: isDark ? "#374151" : "#e5e7eb",
+    borderRadius: 12, paddingHorizontal: 16, paddingVertical: 14,
+    fontSize: 15, marginBottom: 16,
     backgroundColor: isDark ? "#111827" : "#f9fafb",
     color: isDark ? "#f9fafb" : "#111827",
   };
 
   const labelStyle = {
-    fontSize: 11,
-    fontWeight: "600" as const,
-    textTransform: "uppercase" as const,
-    letterSpacing: 1,
-    color: "#9ca3af",
-    marginBottom: 8,
+    fontSize: 11, fontWeight: "600" as const,
+    textTransform: "uppercase" as const, letterSpacing: 1,
+    color: "#9ca3af", marginBottom: 8,
   };
 
-  // ── Icon color lookup ──────────────────────────────────────────────────────
-  const getIconColor = (icon: string) =>
-    ICON_OPTIONS.find((o) => o.icon === icon)?.color ?? "#6b7280";
+  const headerBg = isDark ? accent.primary + "33" : accent.primary;
 
   return (
     <View style={{ flex: 1, backgroundColor: isDark ? "#111827" : accent.light }}>
-      <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+      <StatusBar barStyle="light-content" />
 
-      <View style={{ alignItems: "center", paddingTop: 64, paddingBottom: 16 }}>
+      {/* ── Colored header ───────────────────────────────────────────────── */}
+      <View style={{
+        backgroundColor: headerBg,
+        paddingTop: Platform.OS === "ios" ? 56 : 40,
+        paddingBottom: 24,
+        paddingHorizontal: 20,
+      }}>
         <Text style={{
           fontSize: 32, fontWeight: "800", letterSpacing: -0.5,
-          color: isDark ? "#fda4af" : accent.text,
+          color: "#ffffff",
         }}>
           {t("table.title")}
         </Text>
-        <Text style={{ fontSize: 13, marginTop: 2, color: isDark ? "#6b7280" : "#9ca3af" }}>
+        <Text style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginTop: 4 }}>
           {tables.length} {tables.length === 1 ? "table" : "tables"}
         </Text>
       </View>
@@ -247,7 +221,7 @@ export default function TableScreen() {
         <FlatList
           data={tables}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 160 }}
+          contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 16, paddingBottom: 160 }}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const iconColor = getIconColor(item.emoji);
@@ -255,9 +229,7 @@ export default function TableScreen() {
               .filter((col) => col.type === "number")
               .map((col) => ({
                 label: col.label,
-                total: item.rows.reduce(
-                  (sum, row) => sum + (Number(row.cells[col.id]) || 0), 0,
-                ),
+                total: item.rows.reduce((sum, row) => sum + (Number(row.cells[col.id]) || 0), 0),
               }));
 
             return (
@@ -265,20 +237,14 @@ export default function TableScreen() {
                 onPress={() => navigation.navigate("TableDetail", { tableId: item.id })}
                 activeOpacity={0.8}
                 style={{
-                  borderRadius: 16,
-                  marginBottom: 10,
+                  borderRadius: 16, marginBottom: 10,
                   backgroundColor: isDark ? "#1f2937" : "#ffffff",
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 1 },
-                  shadowOpacity: isDark ? 0.2 : 0.05,
-                  shadowRadius: 6,
-                  elevation: 1,
-                  borderWidth: isDark ? 0 : 0.5,
-                  borderColor: "#f3f4f6",
+                  shadowColor: "#000", shadowOffset: { width: 0, height: 1 },
+                  shadowOpacity: isDark ? 0.2 : 0.05, shadowRadius: 6, elevation: 1,
+                  borderWidth: isDark ? 0 : 0.5, borderColor: "#f3f4f6",
                 }}
               >
                 <View style={{ paddingHorizontal: 16, paddingVertical: 14 }}>
-                  {/* Header row */}
                   <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 12, flex: 1 }}>
                       <View style={{
@@ -289,83 +255,54 @@ export default function TableScreen() {
                         <Ionicons name={item.emoji as any} size={20} color={iconColor} />
                       </View>
                       <View style={{ flex: 1 }}>
-                        <Text style={{
-                          fontSize: 15, fontWeight: "700",
-                          color: isDark ? "#f9fafb" : "#111827",
-                        }} numberOfLines={1}>
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: isDark ? "#f9fafb" : "#111827" }} numberOfLines={1}>
                           {item.name}
                         </Text>
                         {item.description && (
-                          <Text style={{
-                            fontSize: 12, marginTop: 1,
-                            color: isDark ? "#9ca3af" : "#6b7280",
-                          }} numberOfLines={1}>
+                          <Text style={{ fontSize: 12, marginTop: 1, color: isDark ? "#9ca3af" : "#6b7280" }} numberOfLines={1}>
                             {item.description}
                           </Text>
                         )}
                       </View>
                     </View>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={{
-                        paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20,
-                        backgroundColor: isDark ? "#374151" : "#f3f4f6",
-                      }}>
-                        <Text style={{
-                          fontSize: 12, fontWeight: "600",
-                          color: isDark ? "#9ca3af" : "#6b7280",
-                        }}>
+                      <View style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, backgroundColor: isDark ? "#374151" : "#f3f4f6" }}>
+                        <Text style={{ fontSize: 12, fontWeight: "600", color: isDark ? "#9ca3af" : "#6b7280" }}>
                           {item.rows.length} rows
                         </Text>
                       </View>
-                      <TouchableOpacity
-                        onPress={() => handleOpenMenu(item)}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Ionicons
-                          name="ellipsis-vertical"
-                          size={18}
-                          color={isDark ? "#4b5563" : "#d1d5db"}
-                        />
+                      <TouchableOpacity onPress={() => handleOpenMenu(item)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="ellipsis-vertical" size={18} color={isDark ? "#4b5563" : "#d1d5db"} />
                       </TouchableOpacity>
                     </View>
                   </View>
 
-                  {/* Column chips */}
                   <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
                     {item.columns.map((col) => (
-                      <View
-                        key={col.id}
-                        style={{
-                          flexDirection: "row", alignItems: "center", gap: 4,
-                          paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
-                          backgroundColor: isDark ? "#374151" : "#f3f4f6",
-                        }}
-                      >
+                      <View key={col.id} style={{
+                        flexDirection: "row", alignItems: "center", gap: 4,
+                        paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
+                        backgroundColor: isDark ? "#374151" : "#f3f4f6",
+                      }}>
                         <Ionicons name={COLUMN_TYPE_ICONS[col.type] as any} size={11} color={isDark ? "#9ca3af" : "#6b7280"} />
-                        <Text style={{ fontSize: 11, color: isDark ? "#9ca3af" : "#6b7280" }}>
-                          {col.label}
-                        </Text>
+                        <Text style={{ fontSize: 11, color: isDark ? "#9ca3af" : "#6b7280" }}>{col.label}</Text>
                       </View>
                     ))}
                   </View>
 
-                  {/* Number totals */}
                   {numberTotals.length > 0 && item.rows.length > 0 && (
                     <View style={{ flexDirection: "row", gap: 12, marginTop: 8 }}>
-                      {numberTotals.map((t, i) => (
+                      {numberTotals.map((tot, i) => (
                         <View key={i} style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                          <Text style={{ fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af" }}>
-                            {t.label}:
-                          </Text>
+                          <Text style={{ fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af" }}>{tot.label}:</Text>
                           <Text style={{ fontSize: 12, fontWeight: "700", color: iconColor }}>
-                            {t.total.toLocaleString("en-US")}
+                            {tot.total.toLocaleString("en-US")}
                           </Text>
                         </View>
                       ))}
                     </View>
                   )}
 
-                  {/* Reminder badge */}
                   {item.reminder && (
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}>
                       <Ionicons name="notifications-outline" size={11} color={iconColor} />
@@ -403,15 +340,8 @@ export default function TableScreen() {
           activeOpacity={1}
           onPress={() => setMenuVisible(false)}
         >
-          <View style={{
-            marginHorizontal: 16, marginBottom: 40,
-            borderRadius: 24, overflow: "hidden",
-            backgroundColor: isDark ? "#1f2937" : "#ffffff",
-          }}>
-            <View style={{
-              paddingHorizontal: 20, paddingVertical: 16,
-              borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6",
-            }}>
+          <View style={{ marginHorizontal: 16, marginBottom: 40, borderRadius: 24, overflow: "hidden", backgroundColor: isDark ? "#1f2937" : "#ffffff" }}>
+            <View style={{ paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6" }}>
               <Text style={{ fontSize: 13, fontWeight: "600", textAlign: "center", color: isDark ? "#9ca3af" : "#6b7280" }}>
                 {menuTable?.name}
               </Text>
@@ -419,35 +349,21 @@ export default function TableScreen() {
 
             <TouchableOpacity
               onPress={() => handleOpenEdit(menuTable!)}
-              style={{
-                flexDirection: "row", alignItems: "center", gap: 14,
-                paddingHorizontal: 20, paddingVertical: 16,
-                borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6",
-              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6" }}
             >
               <Ionicons name="pencil-outline" size={20} color={isDark ? "#f9fafb" : "#111827"} />
-              <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? "#f9fafb" : "#111827" }}>
-                Edit Table
-              </Text>
+              <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? "#f9fafb" : "#111827" }}>Edit Table</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               onPress={() => { setMenuVisible(false); setReminderModalVisible(true); }}
-              style={{
-                flexDirection: "row", alignItems: "center", gap: 14,
-                paddingHorizontal: 20, paddingVertical: 16,
-                borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6",
-              }}
+              style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6" }}
             >
               <Ionicons name="notifications-outline" size={20} color={isDark ? "#f9fafb" : "#111827"} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? "#f9fafb" : "#111827" }}>
-                  Set Reminder
-                </Text>
+                <Text style={{ fontSize: 15, fontWeight: "500", color: isDark ? "#f9fafb" : "#111827" }}>Set Reminder</Text>
                 {menuTable?.reminder && (
-                  <Text style={{ fontSize: 12, color: isDark ? "#6b7280" : "#9ca3af", marginTop: 1 }}>
-                    Already set — tap to change
-                  </Text>
+                  <Text style={{ fontSize: 12, color: isDark ? "#6b7280" : "#9ca3af", marginTop: 1 }}>Already set — tap to change</Text>
                 )}
               </View>
             </TouchableOpacity>
@@ -455,11 +371,7 @@ export default function TableScreen() {
             {menuTable?.reminder && (
               <TouchableOpacity
                 onPress={handleCancelReminder}
-                style={{
-                  flexDirection: "row", alignItems: "center", gap: 14,
-                  paddingHorizontal: 20, paddingVertical: 16,
-                  borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6",
-                }}
+                style={{ flexDirection: "row", alignItems: "center", gap: 14, paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 0.5, borderBottomColor: isDark ? "#374151" : "#f3f4f6" }}
               >
                 <Ionicons name="notifications-off-outline" size={20} color="#f43f5e" />
                 <Text style={{ fontSize: 15, fontWeight: "500", color: "#f43f5e" }}>Cancel Reminder</Text>
@@ -477,15 +389,9 @@ export default function TableScreen() {
 
           <TouchableOpacity
             onPress={() => setMenuVisible(false)}
-            style={{
-              marginHorizontal: 16, marginBottom: 24,
-              paddingVertical: 16, borderRadius: 16, alignItems: "center",
-              backgroundColor: isDark ? "#1f2937" : "#ffffff",
-            }}
+            style={{ marginHorizontal: 16, marginBottom: 24, paddingVertical: 16, borderRadius: 16, alignItems: "center", backgroundColor: isDark ? "#1f2937" : "#ffffff" }}
           >
-            <Text style={{ fontSize: 15, fontWeight: "600", color: isDark ? "#f9fafb" : "#111827" }}>
-              Cancel
-            </Text>
+            <Text style={{ fontSize: 15, fontWeight: "600", color: isDark ? "#f9fafb" : "#111827" }}>Cancel</Text>
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
@@ -511,17 +417,9 @@ export default function TableScreen() {
           style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
           behavior={Platform.OS === "ios" ? "padding" : "height"}
         >
-          <View style={{
-            backgroundColor: isDark ? "#1f2937" : "#ffffff",
-            borderTopLeftRadius: 32,
-            borderTopRightRadius: 32,
-            maxHeight: "90%",
-          }}>
+          <View style={{ backgroundColor: isDark ? "#1f2937" : "#ffffff", borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: "90%" }}>
             <View style={{ paddingVertical: 14, alignItems: "center" }}>
-              <View style={{
-                width: 40, height: 4, borderRadius: 2,
-                backgroundColor: isDark ? "#4b5563" : "#d1d5db",
-              }} />
+              <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: isDark ? "#4b5563" : "#d1d5db" }} />
             </View>
 
             <ScrollView
@@ -533,7 +431,6 @@ export default function TableScreen() {
                 New Table
               </Text>
 
-              {/* Icon */}
               <Text style={labelStyle}>Icon</Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 20 }}>
                 {ICON_OPTIONS.map((item) => {
@@ -546,21 +443,15 @@ export default function TableScreen() {
                         width: 48, height: 48, borderRadius: 14,
                         alignItems: "center", justifyContent: "center",
                         backgroundColor: isSelected ? item.color + "22" : isDark ? "#374151" : "#f3f4f6",
-                        borderWidth: isSelected ? 2 : 0,
-                        borderColor: item.color,
+                        borderWidth: isSelected ? 2 : 0, borderColor: item.color,
                       }}
                     >
-                      <Ionicons
-                        name={item.icon as any}
-                        size={22}
-                        color={isSelected ? item.color : isDark ? "#9ca3af" : "#6b7280"}
-                      />
+                      <Ionicons name={item.icon as any} size={22} color={isSelected ? item.color : isDark ? "#9ca3af" : "#6b7280"} />
                     </TouchableOpacity>
                   );
                 })}
               </View>
 
-              {/* Name */}
               <Text style={labelStyle}>Table Name</Text>
               <TextInput
                 style={inputStyle}
@@ -570,7 +461,6 @@ export default function TableScreen() {
                 onChangeText={setTableName}
               />
 
-              {/* Description */}
               <Text style={labelStyle}>Description (optional)</Text>
               <TextInput
                 style={inputStyle}
@@ -580,33 +470,24 @@ export default function TableScreen() {
                 onChangeText={setTableDescription}
               />
 
-              {/* Columns */}
               <Text style={labelStyle}>Columns</Text>
               {columns.map((col) => (
-                <View
-                  key={col.id}
-                  style={{
-                    flexDirection: "row", alignItems: "center",
-                    paddingHorizontal: 14, paddingVertical: 12,
-                    borderRadius: 12, marginBottom: 8,
-                    backgroundColor: isDark ? "#374151" : "#f9fafb",
-                    borderWidth: 0.5, borderColor: isDark ? "#4b5563" : "#e5e7eb",
-                  }}
-                >
+                <View key={col.id} style={{
+                  flexDirection: "row", alignItems: "center",
+                  paddingHorizontal: 14, paddingVertical: 12,
+                  borderRadius: 12, marginBottom: 8,
+                  backgroundColor: isDark ? "#374151" : "#f9fafb",
+                  borderWidth: 0.5, borderColor: isDark ? "#4b5563" : "#e5e7eb",
+                }}>
                   <Ionicons name={COLUMN_TYPE_ICONS[col.type] as any} size={16} color={isDark ? "#9ca3af" : "#6b7280"} />
-                  <Text style={{ flex: 1, fontSize: 14, color: isDark ? "#f9fafb" : "#111827", marginHorizontal: 10 }}>
-                    {col.label}
-                  </Text>
-                  <Text style={{ fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af", marginRight: 10 }}>
-                    {col.type}
-                  </Text>
+                  <Text style={{ flex: 1, fontSize: 14, color: isDark ? "#f9fafb" : "#111827", marginHorizontal: 10 }}>{col.label}</Text>
+                  <Text style={{ fontSize: 11, color: isDark ? "#6b7280" : "#9ca3af", marginRight: 10 }}>{col.type}</Text>
                   <TouchableOpacity onPress={() => handleRemoveColumn(col.id)}>
                     <Ionicons name="close-circle" size={20} color="#f43f5e" />
                   </TouchableOpacity>
                 </View>
               ))}
 
-              {/* New column input */}
               <View style={{
                 borderWidth: 0.5, borderColor: isDark ? "#374151" : "#e5e7eb",
                 borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12,
@@ -630,20 +511,11 @@ export default function TableScreen() {
                       style={{
                         flexDirection: "row", alignItems: "center", gap: 4,
                         paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20,
-                        backgroundColor: newColumnType === ct.type
-                          ? accent.primary
-                          : isDark ? "#374151" : "#e5e7eb",
+                        backgroundColor: newColumnType === ct.type ? accent.primary : isDark ? "#374151" : "#e5e7eb",
                       }}
                     >
-                      <Ionicons
-                        name={ct.icon as any}
-                        size={12}
-                        color={newColumnType === ct.type ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280"}
-                      />
-                      <Text style={{
-                        fontSize: 12,
-                        color: newColumnType === ct.type ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280",
-                      }}>
+                      <Ionicons name={ct.icon as any} size={12} color={newColumnType === ct.type ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280"} />
+                      <Text style={{ fontSize: 12, color: newColumnType === ct.type ? "#ffffff" : isDark ? "#9ca3af" : "#6b7280" }}>
                         {ct.label}
                       </Text>
                     </TouchableOpacity>
@@ -660,9 +532,7 @@ export default function TableScreen() {
                 }}
               >
                 <Ionicons name="add-circle-outline" size={16} color={accent.primary} />
-                <Text style={{ color: accent.primary, fontWeight: "600", fontSize: 14 }}>
-                  Add Column
-                </Text>
+                <Text style={{ color: accent.primary, fontWeight: "600", fontSize: 14 }}>Add Column</Text>
               </TouchableOpacity>
 
               <View style={{ flexDirection: "row", gap: 12 }}>

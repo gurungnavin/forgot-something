@@ -190,4 +190,20 @@ export default {
     listReminderTitle: "リストを確認してください！",
     tableReminderTitle: "テーブルのフォローアップをお忘れなく！",
   },
+
+  // ── Categories ───────────────────────────────────────────────────────────
+  categories: {
+    grocery:  "スーパー",
+    travel:   "旅行",
+    work:     "仕事",
+    home:     "家",
+    fitness:  "フィットネス",
+    party:    "パーティー",
+    study:    "勉強",
+    health:   "健康",
+    food:     "食べ物",
+    gaming:   "ゲーム",
+    shopping: "ショッピング",
+    other:    "その他",
+  },
 };

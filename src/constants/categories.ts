@@ -1,4 +1,9 @@
 import { Category } from '../types'
+import { t } from "../i18n";
+
+export function getCategoryLabel(key: string): string {
+  return t(`categories.${key}` as any);
+}
 
 export const CATEGORIES: Category[] = [
   {

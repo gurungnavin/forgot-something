@@ -10,8 +10,19 @@ import { useNavigation } from "@react-navigation/native";
 import { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { Ionicons } from "@expo/vector-icons";
 import { RootStackParamList } from "../types";
+import {
+  InterstitialAd,
+  AdEventType,
+} from "react-native-google-mobile-ads";
 
-const SKIP_DELAY = 5; // seconds before skip becomes tappable
+// TODO: swap to real ID before production
+const AD_UNIT_ID = "ca-app-pub-3940256099942544/4411468910";
+// const AD_UNIT_ID = "ca-app-pub-1244917734079996/9946842000";
+const interstitial = InterstitialAd.createForAdRequest(AD_UNIT_ID, {
+  requestNonPersonalizedAdsOnly: true,
+});
+
+const SKIP_DELAY = 5;
 
 export default function InterstitialAdScreen() {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
@@ -27,7 +38,22 @@ export default function InterstitialAdScreen() {
       useNativeDriver: true,
     }).start();
 
-    // Countdown ticker
+    // AdMob listeners
+    const unsubscribeLoaded = interstitial.addAdEventListener(AdEventType.LOADED, () => {
+      interstitial.show();
+    });
+
+    const unsubscribeClosed = interstitial.addAdEventListener(AdEventType.CLOSED, () => {
+      navigation.popToTop();
+    });
+
+    const unsubscribeError = interstitial.addAdEventListener(AdEventType.ERROR, () => {
+      // Ad failed — fallback UI stays, user can skip after countdown
+    });
+
+    interstitial.load();
+
+    // Countdown ticker (fallback if ad fails)
     const interval = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -39,7 +65,12 @@ export default function InterstitialAdScreen() {
       });
     }, 1000);
 
-    return () => clearInterval(interval);
+    return () => {
+      unsubscribeLoaded();
+      unsubscribeClosed();
+      unsubscribeError();
+      clearInterval(interval);
+    };
   }, []);
 
   const handleSkip = () => {
@@ -75,7 +106,7 @@ export default function InterstitialAdScreen() {
             style={{
               paddingHorizontal: 16, paddingVertical: 8,
               borderRadius: 20,
-              backgroundColor: canSkip ? "#1f2937" : "#1f2937",
+              backgroundColor: "#1f2937",
               opacity: canSkip ? 1 : 0.6,
             }}
           >
@@ -88,14 +119,13 @@ export default function InterstitialAdScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Ad content — centered */}
+        {/* Fallback content while ad loads */}
         <View style={{
           flex: 1,
           alignItems: "center",
           justifyContent: "center",
           paddingHorizontal: 32,
         }}>
-          {/* Ad icon */}
           <View style={{
             width: 100, height: 100, borderRadius: 24,
             backgroundColor: "#1f2937",
@@ -121,7 +151,6 @@ export default function InterstitialAdScreen() {
             Full-screen interstitial slot
           </Text>
 
-          {/* Dummy CTA */}
           <TouchableOpacity
             style={{
               backgroundColor: "#EE5D74",

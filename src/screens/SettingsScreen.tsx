@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import {
   View, Text, TouchableOpacity, StatusBar,
-  ScrollView, Modal, TextInput
+  ScrollView, Modal, TextInput,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useTheme, AccentColor, ColorSchemeOption } from '../context/ThemeContext'
-import { useLocale, notifyLocaleChange } from '../hooks/useLocale'
+import { useLocale } from '../hooks/useLocale'
 import { SUPPORTED_LOCALES, SupportedLocale } from '../i18n/index'
 import { t } from '../i18n/index'
 
@@ -100,29 +100,23 @@ export default function SettingsScreen() {
 
   const { locale, changeLocale } = useLocale()
 
-  const [pickerVisible, setPickerVisible]   = useState(false)
-  const [langVisible,   setLangVisible]     = useState(false)
-  const [tempColor,     setTempColor]       = useState(customHex)
-  const [hexInput,      setHexInput]        = useState(customHex)
-  const [hexError,      setHexError]        = useState(false)
+  const [pickerVisible, setPickerVisible] = useState(false)
+  const [langVisible,   setLangVisible]   = useState(false)
+  const [tempColor,     setTempColor]     = useState(customHex)
+  const [hexInput,      setHexInput]      = useState(customHex)
+  const [hexError,      setHexError]      = useState(false)
 
   const isValidHex = (hex: string) => /^#[0-9A-Fa-f]{6}$/.test(hex)
 
   const handleHexInput = (val: string) => {
     const formatted = val.startsWith('#') ? val : `#${val}`
     setHexInput(formatted)
-    if (isValidHex(formatted)) {
-      setTempColor(formatted)
-      setHexError(false)
-    } else {
-      setHexError(true)
-    }
+    if (isValidHex(formatted)) { setTempColor(formatted); setHexError(false) }
+    else { setHexError(true) }
   }
 
   const handleSwatchPress = (hex: string) => {
-    setTempColor(hex)
-    setHexInput(hex)
-    setHexError(false)
+    setTempColor(hex); setHexInput(hex); setHexError(false)
   }
 
   const handleConfirm = async () => {
@@ -143,18 +137,16 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 64, paddingBottom: 140 }}
       >
         <Text style={{
-          fontSize: 32, fontWeight: '800',
-          color: isDark ? '#f9fafb' : '#111827',
-          marginBottom: 4, letterSpacing: -0.5,
+          fontSize: 32, fontWeight: '800', letterSpacing: -0.5,
+          color: isDark ? '#f9fafb' : '#111827', marginBottom: 4,
         }}>
-          {t("settings.title")}
+          {t('settings.title')}
         </Text>
         <Text style={{ fontSize: 13, color: isDark ? '#6b7280' : '#9ca3af', marginBottom: 8 }}>
           Customise your experience
         </Text>
-
         {/* ── Appearance ─────────────────────────────────────────────────── */}
-        <SectionHeader title={t("settings.appearance")} isDark={isDark} />
+        <SectionHeader title={t('settings.appearance')} isDark={isDark} />
         <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           {SCHEME_OPTIONS.map((option, index) => (
             <SettingsRow
@@ -176,7 +168,7 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── App Colour ──────────────────────────────────────────────────── */}
-        <SectionHeader title={t("settings.appColour")} isDark={isDark} />
+        <SectionHeader title={t('settings.appColour')} isDark={isDark} />
         <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           {COLOR_OPTIONS.map((color, index) => (
             <SettingsRow
@@ -195,8 +187,6 @@ export default function SettingsScreen() {
               }
             />
           ))}
-
-          {/* Custom color row */}
           <SettingsRow
             icon="color-palette-outline"
             iconBg={accentColor === 'custom' ? customHex : isDark ? '#374151' : '#9ca3af'}
@@ -205,12 +195,7 @@ export default function SettingsScreen() {
             isDark={isDark}
             isFirst={false}
             isLast={true}
-            onPress={() => {
-              setTempColor(customHex)
-              setHexInput(customHex)
-              setHexError(false)
-              setPickerVisible(true)
-            }}
+            onPress={() => { setTempColor(customHex); setHexInput(customHex); setHexError(false); setPickerVisible(true) }}
             right={
               accentColor === 'custom'
                 ? <Ionicons name="checkmark-circle" size={22} color={customHex} />
@@ -220,12 +205,12 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── Language ────────────────────────────────────────────────────── */}
-        <SectionHeader title={t("settings.language")} isDark={isDark} />
+        <SectionHeader title={t('settings.language')} isDark={isDark} />
         <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           <SettingsRow
             icon="language-outline"
             iconBg="#6366f1"
-            label={t("settings.language")}
+            label={t('settings.language')}
             subtitle={currentLangLabel}
             isDark={isDark}
             isFirst={true}
@@ -236,13 +221,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* ── About ──────────────────────────────────────────────────────── */}
-        <SectionHeader title={t("settings.about")} isDark={isDark} />
+        <SectionHeader title={t('settings.about')} isDark={isDark} />
         <View style={{ borderRadius: 16, overflow: 'hidden', shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: isDark ? 0.2 : 0.04, shadowRadius: 4, elevation: 1 }}>
           <SettingsRow
             icon="information-circle-outline"
             iconBg="#3b82f6"
             label="Quikli"
-            subtitle="Made with love for forgetful people"
+            subtitle={t('settings.madeWith')}
             isDark={isDark}
             isFirst={true}
             isLast={false}
@@ -251,8 +236,8 @@ export default function SettingsScreen() {
           <SettingsRow
             icon="star-outline"
             iconBg="#f59e0b"
-            label="Rate Quikli"
-            subtitle="Enjoying the app? Leave a review!"
+            label={t('settings.rateQuikli')}
+            subtitle={t('settings.enjoyingApp')}
             isDark={isDark}
             isFirst={false}
             isLast={true}
@@ -263,7 +248,7 @@ export default function SettingsScreen() {
       </ScrollView>
 
       {/* ── Language Picker Modal ───────────────────────────────────────── */}
-      <Modal visible={langVisible} transparent animationType="slide">
+      <Modal visible={langVisible} transparent animationType="fade">
         <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' }}>
           <View style={{
             backgroundColor: isDark ? '#1f2937' : '#ffffff',
@@ -285,10 +270,7 @@ export default function SettingsScreen() {
               return (
                 <TouchableOpacity
                   key={lang.code}
-                  onPress={async () => {
-                    await changeLocale(lang.code as SupportedLocale)
-                    setLangVisible(false)
-                  }}
+                  onPress={async () => { await changeLocale(lang.code as SupportedLocale); setLangVisible(false) }}
                   activeOpacity={0.7}
                   style={{
                     flexDirection: 'row', alignItems: 'center',
@@ -298,7 +280,6 @@ export default function SettingsScreen() {
                     gap: 14,
                   }}
                 >
-                  {/* Flag-like language code badge */}
                   <View style={{
                     width: 44, height: 44, borderRadius: 12,
                     backgroundColor: isSelected ? accent.primary : isDark ? '#374151' : '#f3f4f6',
@@ -308,7 +289,6 @@ export default function SettingsScreen() {
                       {lang.code.toUpperCase()}
                     </Text>
                   </View>
-
                   <View style={{ flex: 1 }}>
                     <Text style={{ fontSize: 15, fontWeight: '600', color: isDark ? '#f9fafb' : '#111827' }}>
                       {lang.nativeLabel}
@@ -317,10 +297,7 @@ export default function SettingsScreen() {
                       {lang.label}
                     </Text>
                   </View>
-
-                  {isSelected && (
-                    <Ionicons name="checkmark-circle" size={22} color={accent.primary} />
-                  )}
+                  {isSelected && <Ionicons name="checkmark-circle" size={22} color={accent.primary} />}
                 </TouchableOpacity>
               )
             })}
@@ -346,10 +323,7 @@ export default function SettingsScreen() {
             </View>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-              <View style={{
-                width: 52, height: 52, borderRadius: 16,
-                backgroundColor: isValidHex(tempColor) ? tempColor : '#cccccc',
-              }} />
+              <View style={{ width: 52, height: 52, borderRadius: 16, backgroundColor: isValidHex(tempColor) ? tempColor : '#cccccc' }} />
               <View style={{ flex: 1 }}>
                 <TextInput
                   value={hexInput}
@@ -363,8 +337,7 @@ export default function SettingsScreen() {
                     color: isDark ? '#f9fafb' : '#111827',
                     borderRadius: 12, paddingHorizontal: 16, paddingVertical: 12,
                     fontSize: 16, fontWeight: '600',
-                    borderWidth: hexError ? 1.5 : 0,
-                    borderColor: '#ef4444',
+                    borderWidth: hexError ? 1.5 : 0, borderColor: '#ef4444',
                   }}
                 />
                 {hexError && (

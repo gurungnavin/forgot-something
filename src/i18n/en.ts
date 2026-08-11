@@ -33,9 +33,10 @@ export default {
     menuCancelReminder: "Cancel Reminder",
     menuDelete: "Delete List",
     deleteConfirmTitle: "Delete List",
-    deleteConfirmMessage: "Delete \"{{name}}\"?",
+    deleteConfirmMessage: 'Delete "{{name}}"?',
     limitReachedTitle: "List Limit Reached",
-    limitReachedMessage: "Watch an ad to unlock 1 list for 2 weeks or upgrade to Pro",
+    limitReachedMessage:
+      "Watch an ad to unlock 1 list for 2 weeks or upgrade to Pro",
     newList: "New List",
     editList: "Edit List",
     listNameLabel: "List Name",
@@ -75,7 +76,7 @@ export default {
     permissionDenied: "Permission Denied",
     permissionMessage: "Enable notifications in Settings.",
     deleteItemTitle: "Delete Item",
-    deleteItemMessage: "Delete \"{{name}}\"?",
+    deleteItemMessage: 'Delete "{{name}}"?',
     limitReachedTitle: "Limit Reached",
     limitReachedMessage: "Watch an ad to add more items.",
     reminderNotification: "Don't forget to check your list before you go!",
@@ -104,7 +105,7 @@ export default {
     newTable: "New Table",
     editTable: "Edit Table",
     deleteConfirmTitle: "Delete Table",
-    deleteConfirmMessage: "Delete \"{{name}}\"?",
+    deleteConfirmMessage: 'Delete "{{name}}"?',
     noColumnsTitle: "No Columns",
     noColumnsMessage: "Add at least one column before creating the table.",
     tableName: "Table Name",
@@ -189,5 +190,21 @@ export default {
   notifications: {
     listReminderTitle: "Don't forget to check your list!",
     tableReminderTitle: "Don't forget to follow up on your table!",
+  },
+
+  // ── Categories ───────────────────────────────────────────────────────────
+  categories: {
+    grocery: "Grocery",
+    travel: "Travel",
+    work: "Work",
+    home: "Home",
+    fitness: "Fitness",
+    party: "Party",
+    study: "Study",
+    health: "Health",
+    food: "Food",
+    gaming: "Gaming",
+    shopping: "Shopping",
+    other: "Other",
   },
 };

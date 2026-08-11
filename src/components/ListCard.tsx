@@ -38,7 +38,7 @@ function AnimatedBell({ color }: { color: string }) {
 
   return (
     <Animated.View style={{ transform: [{ rotate: rotation }] }}>
-      <Ionicons name="notifications" size={12} color={color} />
+      <Ionicons name="notifications" size={14} color={color} />
     </Animated.View>
   );
 }
@@ -62,7 +62,6 @@ export default function ListCard({ list, onPress, onMenuPress }: Props) {
         backgroundColor: isDark ? "#1f2937" : "#ffffff",
         borderRadius: 16,
         marginBottom: 10,
-        overflow: "hidden",
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 1 },
         shadowOpacity: isDark ? 0.2 : 0.05,

@@ -18,7 +18,6 @@ import MissingItemsScreen from "./src/screens/MissingItemsScreen";
 import TableDetailScreen from "./src/screens/TableDetailScreen";
 import OnboardingScreen, { ONBOARDING_KEY } from "./src/screens/OnboardingScreen";
 import TransitionScreen from "./src/screens/TransitionScreen";
-import ProScreen from "./src/screens/ProScreen";
 import InterstitialAdScreen from "./src/screens/InterstitialAdScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import { setupNotifications } from "./src/utils/notifications";
@@ -157,7 +156,6 @@ function RootNavigator() {
         <Stack.Screen name="TableDetail"   component={TableDetailScreen}   options={{ headerShown: false }} />
         <Stack.Screen name="Success"       component={SuccessScreen}       options={{ headerShown: false }} />
         <Stack.Screen name="MissingItems"  component={MissingItemsScreen}  options={{ headerShown: false }} />
-        <Stack.Screen name="Pro" component={ProScreen} options={{ headerShown: false }} />
         <Stack.Screen
           name="Interstitial" component={InterstitialAdScreen} options={{ headerShown: false, animation: "fade" }} />
       </Stack.Navigator>
