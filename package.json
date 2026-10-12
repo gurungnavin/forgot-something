@@ -6,7 +6,11 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "ios:dev": "npm run ios:dh && expo start --dev-client",
+    "ios:build": "xcodebuild -quiet -workspace ios/Quikli.xcworkspace -scheme Quikli -configuration Debug -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.5' -derivedDataPath ios/DerivedData build",
+    "ios:launch": "xcrun simctl install booted ios/DerivedData/Build/Products/Debug-iphonesimulator/Quikli.app && xcrun simctl launch booted com.gurungnavin.quikli",
+    "ios:dh": "npm run ios:build && npm run ios:launch"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
